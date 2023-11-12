@@ -1,16 +1,17 @@
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File   
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from data.repository import Repository
 from utils.jwt import decode_token
 from middleware.middleware import oauth2_scheme
 from datetime import datetime
 from pydantic import BaseModel
 from utils.serialize import get_serialize_document
-import pandas as pd 
+import pandas as pd
 
 workflow_router = APIRouter()
 repository = Repository(
-    "mongodb://admin:T3sT_s3rV@nik.ydns.eu:400/", 
-    "EmergeSync")
+    "mongodb://admin:T3sT_s3rV@nik.ydns.eu:400/",
+    "EmergeSync"
+)
 
 class Workflow(BaseModel):
     name: str
@@ -21,10 +22,10 @@ class Workflow(BaseModel):
 async def create_workflow(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
     print(file.file)
-    
+
     df = pd.read_excel(file.file)
     df.fillna('', inplace=True)
-    
+
     workflow_data = {
         "name": f"{file.filename}",  # название файла
         "create_at": datetime.utcnow(),
@@ -33,7 +34,8 @@ async def create_workflow(file: UploadFile = File(...), token: str = Depends(oau
     }
     workflow_id = await repository.insert_one("workflows", workflow_data)
 
-    workflow_items_list = df.to_dict(orient="records")
+    # Конвертация ключей в строки
+    workflow_items_list = [{str(key): value for key, value in item.items()} for item in df.to_dict(orient="records")]
 
     for item in workflow_items_list:
         item["workflow_id"] = str(workflow_id)
@@ -52,7 +54,7 @@ async def get_workflows(token: str = Depends(oauth2_scheme)):
 @workflow_router.delete("/{id}")
 async def del_worflow(id: str, token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
-    
+
     await repository.delete_by_id("workflow", id)
     await repository.delete_many("workflow", {"workflow_id": id})
     return {"message": "Workflow and item deleted successfully"}
