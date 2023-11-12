@@ -7,7 +7,6 @@ from pydantic import BaseModel
 from utils.serialize import get_serialize_document
 import pandas as pd 
 
-
 workflow_router = APIRouter()
 repository = Repository(
     "mongodb://admin:T3sT_s3rV@nik.ydns.eu:400/", 
@@ -24,6 +23,7 @@ async def create_workflow(file: UploadFile = File(...), token: str = Depends(oau
     print(file.file)
     
     df = pd.read_excel(file.file)
+    df.fillna('', inplace=True)
     
     workflow_data = {
         "name": f"{file.filename}",  # название файла
@@ -51,9 +51,8 @@ async def get_workflows(token: str = Depends(oauth2_scheme)):
 
 @workflow_router.delete("/{id}")
 async def del_worflow(id: str, token: str = Depends(oauth2_scheme)):
-    credentails = decode_token(token)
+    credentials = decode_token(token)
     
     await repository.delete_by_id("workflow", id)
     await repository.delete_many("workflow", {"workflow_id": id})
-    return {"message": "Workflow and item delete successfully"}
-    
+    return {"message": "Workflow and item deleted successfully"}
