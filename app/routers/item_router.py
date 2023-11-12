@@ -37,7 +37,7 @@ async def get_workflow_items(workflow_id: str, token: str = Depends(oauth2_schem
 @item_router.delete("/{workflow_id}/{item_id}")
 async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
-    await repository.delete_one("workflow_items", {"_id": item_id, "workflow_id": workflow_id, "user_id": credentials["id"]})
+    await repository.delete_one("workflow_items", {"_id": item_id, "workflow_id": workflow_id})
     log = {
         "workflow_id": workflow_id,
         "user_id": credentials["id"],
@@ -50,7 +50,7 @@ async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depe
 @item_router.put("/{workflow_id}/{item_id}")
 async def update_workflow_item(workflow_id: str, item_id: str, updated_item: dict, token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
-    await repository.update_one("workflow_items", {"_id": item_id, "workflow_id": workflow_id, "user_id": credentials["id"]}, updated_item)
+    await repository.update_one("workflow_items", {"_id": item_id, "workflow_id": workflow_id}, updated_item)
     log = {
         "workflow_id": workflow_id,
         "user_id": credentials["id"],
