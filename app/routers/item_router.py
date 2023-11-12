@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 from utils.jwt import decode_token
 from data.repository import Repository
 from middleware.middleware import oauth2_scheme
@@ -24,15 +25,16 @@ async def create_workflow_item(workflow_id: str, item: dict, token: str = Depend
     return {"message": "Workflow item created successfully"}
 
 @item_router.get("/{workflow_id}/")
-async def get_workflow_items(workflow_id: str, token: str = Depends(oauth2_scheme)):
-    credentials = decode_token(token)
+async def get_workflow_items(workflow_id: str, token:str = Depends(oauth2_scheme)):
+    # credentials = decode_token(token)
     workflow_items = await repository.find_many("workflow_items", {"workflow_id": workflow_id})
     count = await repository.get_count("workflow_items", {"workflow_id": workflow_id})
-    result = {
+    response_data = {
         "Items": get_serialize_document(workflow_items),
-        "Сount": count
+        "Count": count
     }
-    return result
+
+    return JSONResponse(content=response_data)
 
 @item_router.delete("/{workflow_id}/{item_id}")
 async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depends(oauth2_scheme)):
@@ -59,4 +61,3 @@ async def update_workflow_item(workflow_id: str, item_id: str, updated_item: dic
     }
     await repository.insert_one("workflow_log", log)
     return {"message": "Workflow item updated successfully"}
-
