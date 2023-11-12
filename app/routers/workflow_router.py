@@ -56,11 +56,11 @@ async def get_workflows(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=422, detail=str(e))
 
 @workflow_router.delete("/{id}")
-async def del_worflow(id: str, token: str = Depends(oauth2_scheme)):
+async def del_workflow(id: str, token: str = Depends(oauth2_scheme)):
     try:
         credentials = decode_token(token)
-        await repository.delete_by_id("workflow", id)
-        await repository.delete_many("workflow", {"workflow_id": id})
+        await repository.delete_one("workflows", {"_id": id})
+        await repository.delete_many("workflow_items", {"workflow_id": id})
         return {"message": "Workflow and item deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
