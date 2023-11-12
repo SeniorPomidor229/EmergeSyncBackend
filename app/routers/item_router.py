@@ -31,3 +31,12 @@ async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depe
     credentials = decode_token(token)
     await repository.delete_one("workflow_items", {"_id": item_id, "workflow_id": workflow_id, "user_id": credentials["id"]})
     return {"message": "Workflow and item delete successfully"}
+
+
+@item_router.put("/{workflow_id}/{item_id}")
+async def update_workflow_item(workflow_id: str, item_id: str, updated_item: dict, token: str = Depends(oauth2_scheme)):
+    credentials = decode_token(token)
+    await repository.update_one("workflow_items", {"_id": item_id, "workflow_id": workflow_id, "user_id": credentials["id"]}, updated_item)
+
+    return {"message": "Workflow item updated successfully"}
+
