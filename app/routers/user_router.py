@@ -57,3 +57,7 @@ async def change(request: Profile, token: str = Depends(oauth2_scheme)):
     }
     result = await repository.update_one("profiles", {"user_id":creditals["id"]}, change_document)
     return get_serialize_document(result)
+
+
+
+    

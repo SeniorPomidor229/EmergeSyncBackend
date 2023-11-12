@@ -4,7 +4,9 @@ from utils.jwt import decode_token
 from middleware.middleware import oauth2_scheme
 from datetime import datetime
 from pydantic import BaseModel
+from utils.serialize import get_serialize_document
 import pandas as pd 
+
 
 workflow_router = APIRouter()
 repository = Repository(
@@ -19,25 +21,24 @@ class Workflow(BaseModel):
 @workflow_router.post("/")
 async def create_workflow(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
-    try:
-        df = pd.read_excel(file.file)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error reading Excel file: {str(e)}")
-
+    print(file.file)
+    
+    df = pd.read_excel(file.file)
+    
     workflow_data = {
-        "name": "", 
+        "name": f"{file.filename}",  # название файла
         "create_at": datetime.utcnow(),
         "last_modify": datetime.utcnow(),
         "user_id": credentials["id"]
     }
     workflow_id = await repository.insert_one("workflows", workflow_data)
-    for _, row in df.iterrows():
-        workflow_item_data = {
-            "workflow_id": workflow_id,
-            "column1": row["column1"],  
-            "column2": row["column2"],
-        }
-        await repository.insert_one("workflow_items", workflow_item_data)
+
+    workflow_items_list = df.to_dict(orient="records")
+
+    for item in workflow_items_list:
+        item["workflow_id"] = str(workflow_id)
+
+    await repository.insert_many("workflow_items", workflow_items_list)
 
     return {"message": "Workflow and workflow items created successfully"}
 
@@ -45,5 +46,14 @@ async def create_workflow(file: UploadFile = File(...), token: str = Depends(oau
 async def get_workflows(token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
 
-    workflows = await repository.find("workflows", {"user_id": credentials["id"]})
-    return workflows
+    workflows = await repository.find_many("workflows", {"user_id": credentials["id"]})
+    return get_serialize_document(workflows)
+
+@workflow_router.delete("/{id}")
+async def del_worflow(id: str, token: str = Depends(oauth2_scheme)):
+    credentails = decode_token(token)
+    
+    await repository.delete_by_id("workflow", id)
+    await repository.delete_many("workflow", {"workflow_id": id})
+    return {"message": "Workflow and item delete successfully"}
+    
