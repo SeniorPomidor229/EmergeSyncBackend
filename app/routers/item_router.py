@@ -1,9 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from utils.jwt import decode_token
 from data.repository import Repository
 from middleware.middleware import oauth2_scheme
-from pydantic import BaseModel
-from datetime import datetime
 from utils.serialize import get_serialize_document
 
 item_router = APIRouter()
