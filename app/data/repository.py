@@ -52,3 +52,8 @@ class Repository:
         collection = self.db[collection_name]
         result = await collection.delete_one({"_id": ObjectId(id)})
         return result.deleted_count
+
+    async def get_count(self, collection_name, query):
+        collection = self.db[collection_name]
+        result = await collection.count_documents(query)
+        return result
