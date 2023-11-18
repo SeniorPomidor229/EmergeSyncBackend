@@ -30,7 +30,7 @@ async def get_workflow_items(workflow_id: str, token:str = Depends(oauth2_scheme
     workflow_items = await repository.find_many("workflow_items", {"workflow_id": workflow_id})
     count = await repository.get_count("workflow_items", {"workflow_id": workflow_id})
     response_data = {
-        "Items": get_serialize_document(workflow_items),
+        "Items": await get_serialize_document(workflow_items),
         "Count": count
     }
 
