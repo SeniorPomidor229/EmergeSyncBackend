@@ -4,7 +4,7 @@ from models.role import Role
 class UserDTO(BaseModel):
     username: str
     password: str
-    кole: Role
+    role: Role
 
 class Profile(BaseModel):
     first_name: str
