@@ -10,5 +10,6 @@ class Rules(BaseModel):
     workflow_id:str
     status:Statuses
     fields: Dict[str, str] 
+    is_delete:bool
 
 

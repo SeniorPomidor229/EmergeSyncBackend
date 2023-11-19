@@ -28,5 +28,8 @@ async def get_serialize_document(data) -> dict:
 
 
 def serialize_document_to_user( document) -> Optional[UserDTO]:
-        user_dto_data = {key: value for key, value in document.items() if key != "_id"}
-        return UserDTO(**user_dto_data)
+        try:
+            user_dto_data = {key: value for key, value in document.items() if key != "_id"}
+            return UserDTO(**user_dto_data)
+        except :
+            return None

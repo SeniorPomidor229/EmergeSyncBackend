@@ -1,7 +1,7 @@
 from enum import Enum
 class Statuses(Enum):
-    Hiding=0
-    Visible=1
+    Hiding=0        # исключить из списка поле по ключу и значению
+    Visible=1       # Сделать видимым только определенное поле по ключу и значению
     Unknown=2
 
 class KeyWorkflowItem(Enum):

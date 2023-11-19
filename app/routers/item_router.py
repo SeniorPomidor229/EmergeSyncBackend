@@ -34,31 +34,53 @@ async def get_workflow_items(workflow_id: str, token: str = Depends(oauth2_schem
 
     if not user_raw:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User not found")
-
+    
     user = serialize_document_to_user(user_raw)
-
     if not user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Can't serialize user")
 
-    rules = [rule.fields for rule in user.role.rule if rule.workflow_id == workflow_id and rule.status == Statuses.Hiding]
+    rules = [rule.fields for rule in user.role.rule if rule.workflow_id == workflow_id and rule.status == Statuses.Hiding and not rule.is_delete]
+    only_visible_rules = [rule.fields for rule in user.role.rule if rule.workflow_id == workflow_id and rule.status == Statuses.Visible and not rule.is_delete]
 
     projection = {"_id": 0, "workflow_id": 0}
 
     workflow_items = await repository.find_many("workflow_items", {"workflow_id": workflow_id}, projection=projection)
 
-    if not rules:
+    if not rules and not only_visible_rules:
         
         response_data = {
             "Items": await get_serialize_document(workflow_items),
             "Count": len(workflow_items)
         }
         return JSONResponse(content=response_data)
-   
+    
+
+    if only_visible_rules:
+        for item in workflow_items:
+            for rule in only_visible_rules:
+                for key, value in rule.items():
+                    try:
+                        if key in item and item[key] != value:
+                            item.pop(key, None)
+
+                        keys_to_remove = [item_key for item_key in item.keys() if item_key != key]
+                        for key_del in keys_to_remove:
+                            item.pop(key_del, None)
+                    except Exception as ex:
+                        continue
+
+      
+
     for item in workflow_items:
         for rule in rules:
             for key, value in rule.items():
-                if key in item and item[key] == value:
-                    item.pop(key, None)
+                try:
+                    if key in item and item[key] == value:
+                        item.pop(key, None)
+                except:
+                   
+                    continue
+
     response_data={
         "Items": await get_serialize_document(workflow_items),
         "Count": len(workflow_items)
