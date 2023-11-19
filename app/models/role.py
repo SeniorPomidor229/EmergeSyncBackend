@@ -1,10 +1,10 @@
 from pydantic import BaseModel
 from models.rule import Rules
+from typing import List
 
 class Role(BaseModel):
     name:str
-    rule:list[Rules]
-    user_id:str
+    rule:List[Rules]
 
 
 

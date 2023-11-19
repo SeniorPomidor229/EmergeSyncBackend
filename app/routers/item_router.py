@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends,HTTPException, status
 from fastapi.responses import JSONResponse
 from utils.jwt import decode_token
 from data.repository import Repository
 from middleware.middleware import oauth2_scheme
-from utils.serialize import get_serialize_document
+from utils.serialize import get_serialize_document,serialize_document_to_user
+from models.enums import Statuses
 
 item_router = APIRouter()
 repository = Repository("mongodb://admin:T3sT_s3rV@nik.ydns.eu:400/", "EmergeSync")
@@ -25,17 +26,51 @@ async def create_workflow_item(workflow_id: str, item: dict, token: str = Depend
     return {"message": "Workflow item created successfully"}
 
 @item_router.get("/{workflow_id}/")
-async def get_workflow_items(workflow_id: str, token:str = Depends(oauth2_scheme)):
-    # credentials = decode_token(token)
-   # projection={"_id":0,"workflow_id":0}
-    workflow_items = await repository.find_many("workflow_items", {"workflow_id": workflow_id})
-    count = await repository.get_count("workflow_items", {"workflow_id": workflow_id})
-    response_data = {
-        "Items": await get_serialize_document(workflow_items),
-        "Count": count
-    }
+async def get_workflow_items(workflow_id: str, token: str = Depends(oauth2_scheme)):
+    credentials = decode_token(token)
+    _id =credentials["id"]
+    
+    user_raw = await repository.find_by_id(id=_id,collection_name="users")
 
+    if not user_raw:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User not found")
+
+    user = serialize_document_to_user(user_raw)
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Can't serialize user")
+
+    rules = [rule.fields for rule in user.role.rule if rule.workflow_id == workflow_id and rule.status == Statuses.Hiding]
+
+    projection = {"_id": 0, "workflow_id": 0}
+
+    workflow_items = await repository.find_many("workflow_items", {"workflow_id": workflow_id}, projection=projection)
+
+    if not rules:
+        
+        response_data = {
+            "Items": await get_serialize_document(workflow_items),
+            "Count": len(workflow_items)
+        }
+        return JSONResponse(content=response_data)
+   
+    for item in workflow_items:
+        for rule in rules:
+            for key, value in rule.items():
+                if key in item and item[key] == value:
+                    item.pop(key, None)
+    response_data={
+        "Items": await get_serialize_document(workflow_items),
+        "Count": len(workflow_items)
+    }
     return JSONResponse(content=response_data)
+
+
+
+
+
+    
+
 
 @item_router.delete("/{workflow_id}/{item_id}")
 async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depends(oauth2_scheme)):

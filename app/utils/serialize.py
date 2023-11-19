@@ -2,7 +2,8 @@ from bson.objectid import ObjectId
 from datetime import datetime
 from json import dumps
 import asyncio
-
+from models.user import UserDTO
+from typing import Optional
 async def is_jsonable(x):
     try:
         dumps(x)
@@ -24,3 +25,8 @@ async def get_serialize_document(data) -> dict:
             buf_data[key] = str(value)
 
     return buf_data
+
+
+def serialize_document_to_user( document) -> Optional[UserDTO]:
+        user_dto_data = {key: value for key, value in document.items() if key != "_id"}
+        return UserDTO(**user_dto_data)

@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from models.role import Role
 
+
 class UserDTO(BaseModel):
     username: str
     password: str
@@ -11,6 +12,7 @@ class Profile(BaseModel):
     last_name: str
     phone: str
     email: str
+
 
 
 
