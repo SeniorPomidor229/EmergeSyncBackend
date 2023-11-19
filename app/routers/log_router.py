@@ -12,4 +12,4 @@ repository = Repository(
 @log_router.get("/{workflow_id}")
 async def get_log(workflow_id: str, token: str = Depends(oauth2_scheme)):
     result = await repository.find_many("workflow_log", {"workflow_id": workflow_id})
-    return get_serialize_document(result)
+    return  await get_serialize_document(result)

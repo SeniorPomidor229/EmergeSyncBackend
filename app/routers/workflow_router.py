@@ -51,7 +51,7 @@ async def get_workflows(token: str = Depends(oauth2_scheme)):
     try:
         credentials = decode_token(token)
         workflows = await repository.find_many("workflows", {"user_id": credentials["id"]})
-        return get_serialize_document(workflows)
+        return await get_serialize_document(workflows)
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
 

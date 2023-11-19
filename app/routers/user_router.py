@@ -44,7 +44,7 @@ async def me(token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     print(creditals)
     profile = await repository.find_one("profiles", {"user_id":creditals["id"]})
-    return get_serialize_document(profile)
+    return await get_serialize_document(profile)
 
 @router.put("/")
 async def change(request: Profile, token: str = Depends(oauth2_scheme)):
@@ -56,7 +56,7 @@ async def change(request: Profile, token: str = Depends(oauth2_scheme)):
         "email": request.email
     }
     result = await repository.update_one("profiles", {"user_id":creditals["id"]}, change_document)
-    return get_serialize_document(result)
+    return await get_serialize_document(result)
 
 
 
