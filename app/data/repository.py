@@ -26,10 +26,10 @@ class Repository:
         document = await collection.find_one({"_id": ObjectId(id)})
         return document
 
-    async def find_many(self, collection_name, query) -> list:
+    async def find_many(self, collection_name, query,projection={}) -> list:
         collection = self.db[collection_name]
         documents = []
-        async for document in collection.find(query):
+        async for document in collection.find(query,projection):
             documents.append(document)
         return documents
 

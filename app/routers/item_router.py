@@ -27,6 +27,7 @@ async def create_workflow_item(workflow_id: str, item: dict, token: str = Depend
 @item_router.get("/{workflow_id}/")
 async def get_workflow_items(workflow_id: str, token:str = Depends(oauth2_scheme)):
     # credentials = decode_token(token)
+   # projection={"_id":0,"workflow_id":0}
     workflow_items = await repository.find_many("workflow_items", {"workflow_id": workflow_id})
     count = await repository.get_count("workflow_items", {"workflow_id": workflow_id})
     response_data = {
