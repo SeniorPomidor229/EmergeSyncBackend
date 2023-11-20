@@ -63,7 +63,8 @@ async def get_workflow_items(workflow_id: str, token: str = Depends(oauth2_schem
                         if key in item and item[key] != value:
                             item.pop(key, None)
 
-                        keys_to_remove = [item_key for item_key in item.keys() if item_key != key]
+                        keys_to_remove = [item_key for item_key in item.keys() if item_key  not in rule]
+                        
                         for key_del in keys_to_remove:
                             item.pop(key_del, None)
                     except Exception as ex:
