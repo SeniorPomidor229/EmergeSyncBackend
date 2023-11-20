@@ -16,7 +16,8 @@ class Repository:
         result = await collection.insert_many(documents)
         return result.inserted_ids
 
-    async def find_one(self, collection_name, query) -> dict:
+    async def find_one(self, collection_name, query:dict) -> dict:
+            # document = await db.test_collection.find_one({"i": {"$lt": 1}})
         collection = self.db[collection_name]
         document = await collection.find_one(query)
         return document
@@ -33,7 +34,7 @@ class Repository:
             documents.append(document)
         return documents
 
-    async def update_one(self, collection_name, query, update):
+    async def update_one(self, collection_name, query, update:dict):
         collection = self.db[collection_name]
         result = await collection.update_one(query, {'$set': update})
         return result.modified_count

@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from utils.jwt import decode_token
 from data.repository import Repository
 from middleware.middleware import oauth2_scheme
-from utils.serialize import get_serialize_document,serialize_document_to_user
+from utils.serialize import get_serialize_document,serialize_document_to_role
 from models.enums import Statuses
 
 item_router = APIRouter()
@@ -30,23 +30,23 @@ async def get_workflow_items(workflow_id: str, token: str = Depends(oauth2_schem
     credentials = decode_token(token)
     _id =credentials["id"]
     
-    user_raw = await repository.find_by_id(id=_id,collection_name="users")
-
-    if not user_raw:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User not found")
-    
-    user = serialize_document_to_user(user_raw)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Can't serialize user")
-
-    rules = [rule.fields for rule in user.role.rule if rule.workflow_id == workflow_id and rule.status == Statuses.Hiding and not rule.is_delete]
-    only_visible_rules = [rule.fields for rule in user.role.rule if rule.workflow_id == workflow_id and rule.status == Statuses.Visible and not rule.is_delete]
-
     projection = {"_id": 0, "workflow_id": 0}
 
     workflow_items = await repository.find_many("workflow_items", {"workflow_id": workflow_id}, projection=projection)
+    role_raw= await repository.find_one("roles",{"user_id":_id,"is_delete":False})
+    role = serialize_document_to_role(role_raw)
+ 
+    if not role:
+        response_data = {
+            "Items": await get_serialize_document(workflow_items),
+            "Count": len(workflow_items)
+        }
+        return JSONResponse(content=response_data)
+ 
+    rules = [rule.fields for rule in role.rule if rule.workflow_id == workflow_id and rule.status == Statuses.Hiding.value and not rule.is_delete]
+    only_visible_rules = [rule.fields for rule in role.rule if rule.workflow_id == workflow_id and rule.status == Statuses.Visible.value and not rule.is_delete]
 
-    if not rules and not only_visible_rules:
+    if  not rules and not only_visible_rules:
         
         response_data = {
             "Items": await get_serialize_document(workflow_items),

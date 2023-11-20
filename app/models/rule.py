@@ -7,9 +7,12 @@ from typing import Dict
 # лучше все серилизовать и приветси базу к определенным полям 
 # и не ставить все надежды на фронт
 class Rules(BaseModel):
+    id:str
     workflow_id:str
-    status:Statuses
+    status:int
     fields: Dict[str, str] 
     is_delete:bool
+
+   
 
 

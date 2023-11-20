@@ -5,6 +5,11 @@ from typing import List
 class Role(BaseModel):
     name:str
     rule:List[Rules]
+    user_id:str
+    is_delete:bool
+
+   
+    
 
 
 

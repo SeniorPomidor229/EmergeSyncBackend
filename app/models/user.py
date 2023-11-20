@@ -1,11 +1,11 @@
 from pydantic import BaseModel
-from models.role import Role
+
 
 
 class UserDTO(BaseModel):
     username: str
     password: str
-    role: Role
+  
 
 class Profile(BaseModel):
     first_name: str

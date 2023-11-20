@@ -2,7 +2,7 @@ from bson.objectid import ObjectId
 from datetime import datetime
 from json import dumps
 import asyncio
-from models.user import UserDTO
+from models.role import Role
 from typing import Optional
 async def is_jsonable(x):
     try:
@@ -27,9 +27,10 @@ async def get_serialize_document(data) -> dict:
     return buf_data
 
 
-def serialize_document_to_user( document) -> Optional[UserDTO]:
+def serialize_document_to_role( document)->Role:
         try:
-            user_dto_data = {key: value for key, value in document.items() if key != "_id"}
-            return UserDTO(**user_dto_data)
+            role_data = {key: value for key, value in document.items() if key != "_id"}
+            
+            return Role(**role_data)
         except :
             return None
