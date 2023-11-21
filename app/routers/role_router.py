@@ -30,7 +30,7 @@ async def create_role(request: Role, token: str = Depends(oauth2_scheme)):
     if(role):
        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role Exist")
 
-    for rule in request.Rules:
+    for rule in request.rule:
          rule.id= str(ObjectId())
     request.creater_id=_id
     result = await repository.insert_one("roles", request.model_dump())
