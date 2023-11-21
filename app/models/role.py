@@ -6,7 +6,6 @@ class Role(BaseModel):
     name:str
     rule:List[Rules]
     user_id:str
-    creater_id:str
     is_delete:bool
     workflow_id:str
 

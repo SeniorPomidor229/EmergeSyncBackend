@@ -32,8 +32,15 @@ async def create_role(request: Role, token: str = Depends(oauth2_scheme)):
 
     for rule in request.rule:
          rule.id= str(ObjectId())
-    request.creater_id=_id
-    result = await repository.insert_one("roles", request.model_dump())
+    insertItem={
+        "name":request.name,
+        "rule":request.rule,
+        "user_id":request.user_id,
+        "is_delete":request.is_delete,
+        "workflow_id":request.workflow_id,
+        "creater_id":_id
+    }
+    result = await repository.insert_one("roles", insertItem)
     if(result):
         return JSONResponse(status_code=status.HTTP_201_CREATED,content= None) 
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role dont create")
@@ -51,12 +58,33 @@ async def get_role(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not found")
     return JSONResponse(content=await get_serialize_document(role)) 
 
+
+@role_router.get("/{workflow_id}/{user_id}/")
+async def get_role(workflow_id:str,user_id:str,token: str = Depends(oauth2_scheme)):
+    creditals = decode_token(token)
+    _id=creditals["id"]
+    if(not _id):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User not found")
+    role= await repository.find_one("roles",
+                                    {
+                                             "user_id":user_id ,
+                                             "creater_id":_id,
+                                             "workflow_id":workflow_id, 
+                                             "is_delete":False
+                                    })
+    if(not role):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not found")
+    
+    return JSONResponse(content=await get_serialize_document(role)) 
+
+
 @role_router.put("/")
 async def change_role(request: Role, token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     _id= creditals["id"]
     if(not _id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="User Not Found")
+    
     update_doc=repository.find_one("roles",{"user_id":request.user_id,"workflow_id":request.workflow_id,"is_delete":False})
     if(not update_doc):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Role Not Found")

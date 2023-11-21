@@ -33,6 +33,19 @@ class Repository:
         async for document in collection.find(query,projection):
             documents.append(document)
         return documents
+    
+    async def find_many_filter(self, collection_name, 
+                        query,skip=0,limit=100) -> list:
+        collection = self.db[collection_name]
+        documents = []
+        results=collection.aggregate([
+                {'$match': query},
+                {'$skip':  skip}, 
+                {'$limit':  limit}
+              ])
+        async for document in results:
+            documents.append(document)
+        return documents
 
     async def update_one(self, collection_name, query, update:dict):
         collection = self.db[collection_name]

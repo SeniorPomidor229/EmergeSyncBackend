@@ -33,14 +33,20 @@ async def get_workflow_items(workflow_id: str,  skipCount: int = Query(ge=0, def
     _id =credentials["id"]
     offset_min = skipCount * maxResultCount
     offset_max = (skipCount + 1) * maxResultCount
-    projection = { "workflow_id": 0}
+    #projection = { "workflow_id": 0}
 
-    workflow_items = await repository.find_many("workflow_items", {"workflow_id": workflow_id}, projection=projection)
+    
     role_raw= await repository.find_one("roles",{"user_id":_id, "workflow_id":workflow_id,"is_delete":False})
     role = serialize_document_to_role(role_raw)
  
     if not role:
-        items=(await get_serialize_document(workflow_items))[offset_min:offset_max]
+        workflow_items = await repository.find_many_filter( 
+        collection_name="workflow_items",                                                 
+        query={"workflow_id": workflow_id},
+        skip=offset_min,
+        limit=maxResultCount
+       )
+        items=(await get_serialize_document(workflow_items))
         response_data = {
             "skipCount": skipCount,
             "maxResultCount": maxResultCount,
@@ -53,7 +59,13 @@ async def get_workflow_items(workflow_id: str,  skipCount: int = Query(ge=0, def
     only_visible_rules = [rule.fields for rule in role.rule if  rule.status == Statuses.Visible.value and not rule.is_delete]
 
     if  not rules and not only_visible_rules:
-        items=(await get_serialize_document(workflow_items))[offset_min:offset_max]
+        workflow_items = await repository.find_many_filter( 
+        collection_name="workflow_items",                                                 
+        query={"workflow_id": workflow_id},
+        skip=offset_min,
+        limit=maxResultCount
+       )
+        items=(await get_serialize_document(workflow_items))
         response_data = {
              "skipCount": skipCount,
             "maxResultCount": maxResultCount,
@@ -62,6 +74,8 @@ async def get_workflow_items(workflow_id: str,  skipCount: int = Query(ge=0, def
         }
         return JSONResponse(content=response_data)
     
+    
+    workflow_items = await repository.find_many("workflow_items", {"workflow_id": workflow_id}, projection={"test":0})
 
     if only_visible_rules:
         for item in workflow_items:
@@ -95,7 +109,7 @@ async def get_workflow_items(workflow_id: str,  skipCount: int = Query(ge=0, def
     response_data = {
             "skipCount": skipCount,
             "maxResultCount": maxResultCount,
-            "Items":items ,
+            "Items":items[offset_min:offset_max] ,
             "Count": len(items)
         }                
  
