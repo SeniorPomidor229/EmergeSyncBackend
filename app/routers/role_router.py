@@ -120,6 +120,22 @@ async def del_role(request: Role,token: str = Depends(oauth2_scheme)):
     result = await repository.update_one("roles", {"user_id":request.user_id,  "workflow_id":request.workflow_id,"is_delete":False}, role)
     return await get_serialize_document(result)
 
+@role_router.get("/{workflow_id}/")
+async def get_roles(workflow_id:str,token: str = Depends(oauth2_scheme)):
+    creditals = decode_token(token)
+    _id=creditals["id"]
+    if(not _id):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User not found")
+    roles= await repository.find_many("roles",
+                                    {
+                                           
+                                             "creater_id":_id,
+                                             "workflow_id":workflow_id, 
+                                             "is_delete":False
+                                    })
+   
+    return JSONResponse(content=await get_serialize_document(roles)) 
+
 
 
 @role_router.post("/rules/")
