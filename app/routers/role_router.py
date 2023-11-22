@@ -82,11 +82,14 @@ async def get_role(workflow_id:str,user_id:str,token: str = Depends(oauth2_schem
                                              "workflow_id":workflow_id, 
                                              "is_delete":False
                                     })
+    prof=await repository.find_one("profiles", {"user_id":user_id})
+    if(not role or not prof):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not found Or Profile")
+    response=await get_serialize_document(role)
     
-    if(not role):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not found")
+    response["profile"]=await get_serialize_document(prof)
 
-    return JSONResponse(content=await get_serialize_document(role)) 
+    return JSONResponse(content=response) 
 
 
 @role_router.put("/")
@@ -128,15 +131,25 @@ async def get_roles(workflow_id:str,token: str = Depends(oauth2_scheme)):
     _id=creditals["id"]
     if(not _id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User not found")
-    roles= await repository.find_many("roles",
+    roles= await get_serialize_document(await repository.find_many("roles",
                                     {
                                            
                                              "creater_id":_id,
                                              "workflow_id":workflow_id, 
                                              "is_delete":False
-                                    })
-   
-    return JSONResponse(content=await get_serialize_document(roles)) 
+                                    }))
+    user_ids_from_roles = [role["user_id"] for role in roles]
+    profiles =await get_serialize_document( await repository.find_many("profiles", {"user_id": {"$in": user_ids_from_roles}}) )
+    combined= zip(profiles, roles)
+    sorted_list = sorted(combined, key=lambda x: x[1])
+    result_list=list()
+    for item in sorted_list:
+        item[1]["profile"]=item[0]
+        result_list.append(item[1])
+
+    return JSONResponse(content= await get_serialize_document(result_list)) 
+
+
 
 
 
