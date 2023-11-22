@@ -27,12 +27,13 @@ async def create_workflow_item(workflow_id: str, item: dict, token: str = Depend
     return {"message": "Workflow item created successfully"}
 
 @item_router.get("/{workflow_id}" )
-async def get_workflow_items(workflow_id: str,  skipCount: int = Query(ge=0, default=0),
-                maxResultCount : int = Query(ge=1, le=100), token: str = Depends(oauth2_scheme)):
+async def get_workflow_items(workflow_id: str,  skip: int = Query(ge=0, default=0),inlinecount =Query(),
+                top : int = Query(ge=1, le=100), token: str = Depends(oauth2_scheme)):
+    #  $inlinecount=allpages&$skip=19&$top=19
     credentials = decode_token(token)
     _id =credentials["id"]
-    offset_min = skipCount * maxResultCount
-    offset_max = (skipCount + 1) * maxResultCount
+    offset_min = skip
+    offset_max = top
     #projection = { "workflow_id": 0}
 
     
@@ -44,12 +45,12 @@ async def get_workflow_items(workflow_id: str,  skipCount: int = Query(ge=0, def
         collection_name="workflow_items",                                                 
         query={"workflow_id": workflow_id},
         skip=offset_min,
-        limit=maxResultCount
+        limit=top
        )
         items=(await get_serialize_document(workflow_items))
         response_data = {
-            "skipCount": skipCount,
-            "maxResultCount": maxResultCount,
+            "skipCount": skip,
+            "maxResultCount": top,
             "Items":items ,
             "Count": len(items)
         }
@@ -63,12 +64,12 @@ async def get_workflow_items(workflow_id: str,  skipCount: int = Query(ge=0, def
         collection_name="workflow_items",                                                 
         query={"workflow_id": workflow_id},
         skip=offset_min,
-        limit=maxResultCount
+        limit=top
        )
         items=(await get_serialize_document(workflow_items))
         response_data = {
-             "skipCount": skipCount,
-            "maxResultCount": maxResultCount,
+             "skipCount": skip,
+            "maxResultCount": top,
             "Items":items ,
             "Count": len(items)
         }
@@ -107,8 +108,8 @@ async def get_workflow_items(workflow_id: str,  skipCount: int = Query(ge=0, def
                     continue
     items=(await get_serialize_document(workflow_items))[offset_min:offset_max]
     response_data = {
-            "skipCount": skipCount,
-            "maxResultCount": maxResultCount,
+            "skipCount": skip,
+            "maxResultCount": top,
             "Items":items[offset_min:offset_max] ,
             "Count": len(items)
         }                
@@ -118,7 +119,7 @@ async def get_workflow_items(workflow_id: str,  skipCount: int = Query(ge=0, def
 
 
 
-@item_router.get("/without_pagination/{workflow_id}/" )
+@item_router.get("without_pagination/{workflow_id}/" )
 async def get_workflows(workflow_id: str, 
                  token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
@@ -193,6 +194,7 @@ async def get_workflows(workflow_id: str,
 
 @item_router.delete("/{workflow_id}/{item_id}")
 async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depends(oauth2_scheme)):
+
     credentials = decode_token(token)
     await repository.delete_one("workflow_items", {"_id": item_id, "workflow_id": workflow_id})
     log = {
