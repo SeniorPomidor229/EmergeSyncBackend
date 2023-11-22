@@ -24,7 +24,9 @@ async def create_workflow_item(workflow_id: str, item: dict, token: str = Depend
         "change": result
     }
     await repository.insert_one("workflow_log", log)
-    return {"message": "Workflow item created successfully"}
+    response_data={"workflow_id":workflow_id}
+    return JSONResponse(content=response_data)
+   
 
 @item_router.get("/{workflow_id}/" )
 async def get_workflow_items(workflow_id: str,  request:Request, token: str = Depends(oauth2_scheme)):
