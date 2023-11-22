@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
+from bson import ObjectId
 from data.repository import Repository
 from utils.jwt import decode_token
 from middleware.middleware import oauth2_scheme
@@ -59,7 +60,7 @@ async def get_workflows(token: str = Depends(oauth2_scheme)):
 async def del_workflow(id: str, token: str = Depends(oauth2_scheme)):
     try:
         credentials = decode_token(token)
-        await repository.delete_one("workflows", {"_id": id})
+        await repository.delete_one("workflows", {"_id": ObjectId(id)})
         await repository.delete_many("workflow_items", {"workflow_id": id})
         return {"message": "Workflow and item deleted successfully"}
     except Exception as e:
