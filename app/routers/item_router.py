@@ -116,6 +116,81 @@ async def get_workflow_items(workflow_id: str,  skipCount: int = Query(ge=0, def
     return JSONResponse(content=response_data)
 
 
+
+
+@item_router.get("/{workflow_id}" )
+async def get_workflow_items(workflow_id: str, 
+                 token: str = Depends(oauth2_scheme)):
+    credentials = decode_token(token)
+    _id =credentials["id"]
+   
+    role_raw= await repository.find_one("roles",{"user_id":_id, "workflow_id":workflow_id,"is_delete":False})
+    role = serialize_document_to_role(role_raw)
+    workflow_items= await repository.find_many("workflow_items", {"workflow_id": workflow_id}, projection={"test":0})
+    if not role:
+      
+        items=(await get_serialize_document(workflow_items))
+        response_data = {
+            
+            "Items":items ,
+            "Count": len(items)
+        }
+        return JSONResponse(content=response_data)
+    
+    rules = [rule.fields for rule in role.rule if  rule.status == Statuses.Hiding.value and not rule.is_delete]
+    only_visible_rules = [rule.fields for rule in role.rule if  rule.status == Statuses.Visible.value and not rule.is_delete]
+
+    if  not rules and not only_visible_rules:
+        items=(await get_serialize_document(workflow_items))
+        response_data = {
+     
+            "Items":items ,
+            "Count": len(items)
+        }
+        return JSONResponse(content=response_data)
+    
+    
+
+    if only_visible_rules:
+        for item in workflow_items:
+            for rule in only_visible_rules:
+                for key, value in rule.items():
+                    try:
+                        if key in item and item[key] != value:
+                            item.pop(key, None)
+
+                        keys_to_remove = [item_key for item_key in item.keys() if item_key  not in rule]
+                        
+                        for key_del in keys_to_remove:
+                            item.pop(key_del, None)
+                    except Exception as ex:
+                        continue
+
+      
+
+    for item in workflow_items:
+
+        
+        for rule in rules:
+            for key, value in rule.items():
+                try:
+                    if key in item and item[key] == value:
+                        item.pop(key, None)
+                except:
+                   
+                    continue
+    items=(await get_serialize_document(workflow_items))
+    response_data = {
+         
+            "Items":items ,
+            "Count": len(items)
+        }                
+ 
+    return JSONResponse(content=response_data)
+
+
+
+
 @item_router.delete("/{workflow_id}/{item_id}")
 async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)

@@ -20,6 +20,16 @@ repository = Repository(
 async def create_role(request: Role, token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     _id=creditals["id"]
+
+    workflow={}
+    try:
+        workflow=await  repository.find_one("workflows",{ "_id":ObjectId(request.workflow_id)})
+    except:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Workflow underfind or not access")
+
+    if(not workflow):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Workflow underfind or not access")
+  
     role_raw=  await repository.find_one("roles",{"user_id":request.user_id, "workflow_id":request.workflow_id, "is_delete":False})
     
     if(role_raw):
@@ -34,7 +44,7 @@ async def create_role(request: Role, token: str = Depends(oauth2_scheme)):
          rule.id= str(ObjectId())
     insertItem={
         "name":request.name,
-        "rule":request.rule,
+        "rule": await get_serialize_document(request.rule),
         "user_id":request.user_id,
         "is_delete":request.is_delete,
         "workflow_id":request.workflow_id,
