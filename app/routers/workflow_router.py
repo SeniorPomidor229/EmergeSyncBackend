@@ -7,7 +7,7 @@ from datetime import datetime
 from pydantic import BaseModel
 from utils.serialize import get_serialize_document
 import pandas as pd
-
+from fastapi.responses import JSONResponse
 workflow_router = APIRouter()
 repository = Repository(
     "mongodb://admin:T3sT_s3rV@nik.ydns.eu:400/",
@@ -42,8 +42,9 @@ async def create_workflow(file: UploadFile = File(...), token: str = Depends(oau
             item["workflow_id"] = str(workflow_id)
 
         await repository.insert_many("workflow_items", workflow_items_list)
-
-        return {"message": "Workflow and workflow items created successfully"}
+        response_data={"workflow_id":workflow_id}
+        return JSONResponse(content=response_data)
+        #return {"message": "Workflow and workflow items created successfully"}
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
 
