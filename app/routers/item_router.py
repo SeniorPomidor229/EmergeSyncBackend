@@ -124,7 +124,7 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
 
 
 
-@item_router.get("without_pagination/{workflow_id}/" )
+@item_router.get("/without_pagination/{workflow_id}" )
 async def get_workflows(workflow_id: str, 
                  token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
@@ -194,6 +194,22 @@ async def get_workflows(workflow_id: str,
  
     return JSONResponse(content=response_data)
 
+
+
+@item_router.get("/getKeys/{workflow_id}/")
+async def get_workflows(workflow_id: str, 
+                 token: str = Depends(oauth2_scheme)):
+    credentials = decode_token(token)
+    _id =credentials["id"]
+   
+    role_raw= await repository.find_one("roles",{"user_id":_id, "workflow_id":workflow_id,"is_delete":False})
+    role = serialize_document_to_role(role_raw)
+    workflow_items= await repository.find_one("workflow_items", {"workflow_id": workflow_id}, projection={"test":0})
+    if not role:
+      
+        item=(await get_serialize_document(workflow_items))
+      
+        return JSONResponse(content=item)
 
 
 
