@@ -46,6 +46,13 @@ async def me(token: str = Depends(oauth2_scheme)):
     profile = await repository.find_one("profiles", {"user_id":creditals["id"]})
     return await get_serialize_document(profile)
 
+
+@router.get("/users")
+async def get_users(token: str = Depends(oauth2_scheme)):
+    creditals = decode_token(token)
+    print(creditals)
+    profile = await repository.find_many("profiles", {"reportedBy": { '$ne': {"user_id":creditals["id"]} }})
+    return await get_serialize_document(profile)
 @router.put("/")
 async def change(request: Profile, token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
