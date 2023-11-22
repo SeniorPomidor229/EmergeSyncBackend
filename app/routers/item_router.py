@@ -30,7 +30,6 @@ async def create_workflow_item(workflow_id: str, item: dict, token: str = Depend
 
 @item_router.get("/{workflow_id}/" )
 async def get_workflow_items(workflow_id: str,  request:Request, token: str = Depends(oauth2_scheme)):
-    #  $inlinecount=allpages&$skip=19&$top=19
     skip = int(request.query_params.get("$skip", 0))
     top = int(request.query_params.get("$top", 0))
 
@@ -40,7 +39,7 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
     credentials = decode_token(token)
     _id =credentials["id"]
     offset_min = skip
-    offset_max = top
+    offset_max = top+skip
     workflow_items = await repository.find_many("workflow_items", {"workflow_id": workflow_id}, projection={"test":0})
 
     #projection = { "workflow_id": 0}
@@ -93,9 +92,7 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
 
       
 
-    for item in workflow_items:
-
-        
+    for item in workflow_items:   
         for rule in rules:
             for key, value in rule.items():
                 try:
@@ -195,7 +192,7 @@ async def get_workflows(workflow_id: str,
    
     role_raw= await repository.find_one("roles",{"user_id":_id, "workflow_id":workflow_id,"is_delete":False})
     role = serialize_document_to_role(role_raw)
-    workflow_items= await repository.find_one("workflow_items", {"workflow_id": workflow_id}, projection={"test":0})
+    workflow_items= await repository.find_one("workflow_items", {"workflow_id": workflow_id})
     if not role:
       
         item=(await get_serialize_document(workflow_items))

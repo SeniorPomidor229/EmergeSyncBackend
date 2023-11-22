@@ -45,7 +45,12 @@ async def me(token: str = Depends(oauth2_scheme)):
     print(creditals)
     profile = await repository.find_one("profiles", {"user_id":creditals["id"]})
     return await get_serialize_document(profile)
-
+@router.get("/{user_id}")
+async def me(user_id:str,token: str = Depends(oauth2_scheme)):
+    creditals = decode_token(token)
+    print(creditals)
+    profile = await repository.find_one("profiles", {"user_id":user_id})
+    return await get_serialize_document(profile)
 
 @router.get("/users")
 async def get_users(token: str = Depends(oauth2_scheme)):
