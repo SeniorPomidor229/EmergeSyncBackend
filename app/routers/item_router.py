@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends,HTTPException, status
+from fastapi import APIRouter, Depends,HTTPException, status,Request
 from fastapi.responses import JSONResponse
 from utils.jwt import decode_token
 from data.repository import Repository
@@ -26,10 +26,15 @@ async def create_workflow_item(workflow_id: str, item: dict, token: str = Depend
     await repository.insert_one("workflow_log", log)
     return {"message": "Workflow item created successfully"}
 
-@item_router.get("/{workflow_id}" )
-async def get_workflow_items(workflow_id: str,  skip: int = Query(ge=0, default=0),inlinecount =Query(),
-                top : int = Query(ge=1, le=100), token: str = Depends(oauth2_scheme)):
+@item_router.get("/{workflow_id}/" )
+async def get_workflow_items(workflow_id: str,  request:Request, token: str = Depends(oauth2_scheme)):
     #  $inlinecount=allpages&$skip=19&$top=19
+    skip = int(request.query_params.get("$skip", 0))
+    top = int(request.query_params.get("$top", 0))
+
+    if(not top):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Top must be positive")
+    
     credentials = decode_token(token)
     _id =credentials["id"]
     offset_min = skip
