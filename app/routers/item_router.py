@@ -118,8 +118,8 @@ async def get_workflow_items(workflow_id: str,  skipCount: int = Query(ge=0, def
 
 
 
-@item_router.get("/{workflow_id}" )
-async def get_workflow_items(workflow_id: str, 
+@item_router.get("/without_pagination/{workflow_id}/" )
+async def get_workflows(workflow_id: str, 
                  token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
     _id =credentials["id"]
