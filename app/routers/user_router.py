@@ -20,14 +20,28 @@ async def create(request: UserDTO):
     result = await repository.insert_one("users", request.model_dump())
     profile = {
         "user_id": str(result),
-        "first_name":"",
+        "first_name":request.username,
         "last_name":"",
         "phone":"",
         "email":""
         }
     await repository.insert_one("profiles", profile)
     return str(result)
-
+@router.post("/create/")
+async def create(request: UserDTO,first_name:str,last_name:str):
+    user = await repository.find_one("users", {"username":request.username})
+    if user != None:
+        raise HTTPException(404, "user already excist")
+    result = await repository.insert_one("users", request.model_dump())
+    profile = {
+        "user_id": str(result),
+        "first_name":first_name,
+        "last_name":last_name,
+        "phone":"",
+        "email":""
+        }
+    await repository.insert_one("profiles", profile)
+    return str(result)
 @router.post("/login")
 async def token(request: UserDTO):
     user = await repository.find_one("users", {"username":request.username})
