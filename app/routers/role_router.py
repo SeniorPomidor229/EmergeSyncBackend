@@ -107,13 +107,13 @@ async def change_role(request: Role, token: str = Depends(oauth2_scheme)):
     return await get_serialize_document(result)
 
 @role_router.delete("/")
-async def del_role(request: Role,token: str = Depends(oauth2_scheme)):
+async def del_role(id: str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     _id= creditals["id"]
     if(not _id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="User Not Found")
   
-    role_raw=await repository.find_one("roles",{"user_id":request.user_id,  "workflow_id":request.workflow_id,"is_delete":False})
+    role_raw=await repository.find_one("roles",{"_id":ObjectId(id),"is_delete":False})
     if(not role_raw):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not found")
     role= await serialize_document_to_role(role_raw)
@@ -121,7 +121,7 @@ async def del_role(request: Role,token: str = Depends(oauth2_scheme)):
     if(not role):
         raise HTTPException(status_code= status.HTTP_409_CONFLICT, detail="Can't serilize role")
     role.is_delete=True
-    result = await repository.update_one("roles", {"user_id":request.user_id,  "workflow_id":request.workflow_id,"is_delete":False}, role)
+    result = await repository.update_one("roles",{"_id":ObjectId(id),"is_delete":False}, role)
     return await get_serialize_document(result)
 
 
