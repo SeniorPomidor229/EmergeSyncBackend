@@ -103,7 +103,7 @@ async def change_role(request: Role, token: str = Depends(oauth2_scheme)):
     if(not update_doc):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Role Not Found")
 
-    result = await repository.update_one("roles", {"user_id":request.user_id,"workflow_id":request.workflow_id, "is_delete":False}, request)
+    result = await repository.update_one("roles", {"user_id":request.user_id,"workflow_id":request.workflow_id, "is_delete":False}, request.model_dump())
     return await get_serialize_document(result)
 
 @role_router.delete("/")
