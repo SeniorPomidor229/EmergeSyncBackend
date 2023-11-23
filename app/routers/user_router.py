@@ -52,11 +52,16 @@ async def me(user_id:str,token: str = Depends(oauth2_scheme)):
     profile = await repository.find_one("profiles", {"user_id":user_id})
     return await get_serialize_document(profile)
 
-@router.get("/users")
+@router.get("/users/")
 async def get_users(token: str = Depends(oauth2_scheme)):
+ 
     creditals = decode_token(token)
+  
     print(creditals)
     profile = await repository.find_many("profiles", {"reportedBy": { '$ne': {"user_id":creditals["id"]} }})
+    if not profile:
+        profile=[]
+    
     return await get_serialize_document(profile)
 
 
