@@ -14,10 +14,12 @@ repository = Repository(
     "EmergeSync"
 )
 
+
 class Workflow(BaseModel):
     name: str
     create_at: datetime
     last_modify: datetime
+
 
 @workflow_router.post("/")
 async def create_workflow(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
@@ -36,17 +38,19 @@ async def create_workflow(file: UploadFile = File(...), token: str = Depends(oau
         }
         workflow_id = await repository.insert_one("workflows", workflow_data)
 
-        workflow_items_list = [{str(key): value for key, value in item.items()} for item in df.to_dict(orient="records")]
+        workflow_items_list = [{str(key): value for key, value in item.items()}
+                               for item in df.to_dict(orient="records")]
 
         for item in workflow_items_list:
             item["workflow_id"] = str(workflow_id)
 
         await repository.insert_many("workflow_items", workflow_items_list)
-        response_data={"workflow_id":workflow_id}
+        response_data = {"workflow_id": str(workflow_id)}
         return JSONResponse(content=response_data)
-        #return {"message": "Workflow and workflow items created successfully"}
+        # return {"message": "Workflow and workflow items created successfully"}
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
+
 
 @workflow_router.get("/")
 async def get_workflows(token: str = Depends(oauth2_scheme)):
@@ -56,6 +60,7 @@ async def get_workflows(token: str = Depends(oauth2_scheme)):
         return await get_serialize_document(workflows)
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
+
 
 @workflow_router.delete("/{id}")
 async def del_workflow(id: str, token: str = Depends(oauth2_scheme)):
