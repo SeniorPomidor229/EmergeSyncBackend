@@ -112,16 +112,11 @@ async def del_role(role_id: str,token: str = Depends(oauth2_scheme)):
     _id= creditals["id"]
     if(not _id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="User Not Found")
-  
-    role_raw=await repository.find_one("roles",{"_id":ObjectId(role_id),"is_delete":False})
+   
+    role_raw=await repository.find_one("roles",{"_id":ObjectId(role_id)})
     if(not role_raw):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not found")
-    role= await serialize_document_to_role(role_raw)
-    
-    if(not role):
-        raise HTTPException(status_code= status.HTTP_409_CONFLICT, detail="Can't serilize role")
-    role.is_delete=True
-    result = await repository.delete_by_id("roles",{"_id":ObjectId(role_id),"is_delete":False})
+    result = await repository.delete_by_id("roles",ObjectId(role_id))
     return await get_serialize_document(result)
 
 
