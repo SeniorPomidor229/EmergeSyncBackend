@@ -124,6 +124,8 @@ async def del_role(role_id: str,token: str = Depends(oauth2_scheme)):
 async def get_roles(workflow_id:str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     _id=creditals["id"]
+
+
     if(not _id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User not found")
     roles= await get_serialize_document(await repository.find_many("roles",
@@ -131,13 +133,28 @@ async def get_roles(workflow_id:str,token: str = Depends(oauth2_scheme)):
                                            
                                              "creater_id":_id,
                                              "workflow_id":workflow_id, 
-                                             "is_delete":False
+                        
                                     }))
+    if(not roles):
+            roles= await get_serialize_document(await repository.find_many("roles",
+                                    {
+                                
+                                             "workflow_id":workflow_id, 
+                        
+                                    }))
+    return roles
     user_ids_from_roles = [role["user_id"] for role in roles]
+    user_ids_from_roles.append("655f4b611393e4e6aa0ee7d1")
+    user_ids_from_roles.append("655f4b611393e4e6aa0ee7d1")
+    #return user_ids_from_roles
     profiles =await get_serialize_document( await repository.find_many("profiles", {"user_id": {"$in": user_ids_from_roles}}) )
+    
+# return await get_serialize_document( profiles)
+   
     combined= zip(profiles, roles)
     sorted_list = sorted(combined, key=lambda x: x[1])
     result_list=list()
+  
     for item in sorted_list:
         item[1]["profile"]=item[0]
         result_list.append(item[1])
