@@ -8,7 +8,6 @@ from typing import Dict
 # и не ставить все надежды на фронт
 class Rules(BaseModel):
     id:str
-  
     status:int
     fields: Dict[str, str] 
     is_delete:bool

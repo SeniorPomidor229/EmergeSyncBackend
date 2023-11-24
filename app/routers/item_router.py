@@ -189,15 +189,14 @@ async def get_workflows(workflow_id: str,
                  token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
     _id =credentials["id"]
+    
    
-    role_raw= await repository.find_one("roles",{"user_id":_id, "workflow_id":workflow_id,"is_delete":False})
-    role = serialize_document_to_role(role_raw)
+  
     workflow_items= await repository.find_one("workflow_items", {"workflow_id": workflow_id})
-    if not role:
-      
-        item=(await get_serialize_document(workflow_items))
-      
-        return JSONResponse(content=item)
+    
+    item=(await get_serialize_document(workflow_items))
+ 
+    return JSONResponse(content=item)
 
 
 

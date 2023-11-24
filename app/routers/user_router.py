@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends,status
 from data.repository import Repository
 from models.user import *
 from utils.jwt import encode_token, decode_token
@@ -64,6 +64,9 @@ async def me(user_id:str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     print(creditals)
     profile = await repository.find_one("profiles", {"user_id":user_id})
+    if not profile:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Profile dont find")
+
     return await get_serialize_document(profile)
 
 @router.get("/users/")
