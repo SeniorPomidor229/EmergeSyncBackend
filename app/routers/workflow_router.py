@@ -60,10 +60,18 @@ async def get_workflows(token: str = Depends(oauth2_scheme)):
         workflows = await repository.find_many("workflows",{"user_id": {"$in": [credentials["id"]]}})
         workflows_list=await get_serialize_document(workflows)
         for workflow in workflows_list:
-            if workflow["creater_id"]==credentials["id"]:
-                workflow["is_creator"]=True
-            else:
-                workflow["is_creator"]=False
+            try:
+                if workflow["creater_id"] == credentials["id"]:
+                    workflow["is_creator"]=True
+                else:
+                    workflow["is_creator"]=False
+            except:
+                 workflow["creater_id"] =""
+                 if workflow["creater_id"] == credentials["id"]:
+                    workflow["is_creator"]=True
+                 else:
+                    workflow["is_creator"]=False
+
         return workflows_list
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
