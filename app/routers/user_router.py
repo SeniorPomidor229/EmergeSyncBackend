@@ -69,13 +69,45 @@ async def me(user_id:str,token: str = Depends(oauth2_scheme)):
 
     return await get_serialize_document(profile)
 
-@router.get("/users/")
-async def get_users(token: str = Depends(oauth2_scheme)):
+@router.get("/users/{workflow_id}/")
+async def get_users(workflow_id:str,token: str = Depends(oauth2_scheme)):
  
     creditals = decode_token(token)
   
     print(creditals)
-    profile = await repository.find_many("profiles", {"reportedBy": { '$ne': {"user_id":creditals["id"]} }})
+    profile = await repository.find_agregate(
+    collection_name="profiles",
+    lookup=
+    {
+        "$lookup": {
+            "from": "roles",
+            "localField": "user_id",
+            "foreignField": "user_id",
+            "as": "userRoles"
+        }
+    },
+
+    match={
+        "$match": 
+        {
+             
+           "$and": [
+            {
+                "$or": [
+                    {"userRoles": {"$size": 0}},
+                    {"userRoles.is_delete": {"$exists": False}},
+                    {"userRoles.workflow_id":{"$ne": workflow_id} },
+                ]
+            },
+            {"user_id": {"$ne": creditals["id"]}}
+        ]
+        }
+    }
+
+)
+
+   
+    #profile = await repository.find_many("profiles", )
     if not profile:
         profile=[]
     

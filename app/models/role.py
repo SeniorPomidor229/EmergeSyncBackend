@@ -8,7 +8,7 @@ class Role(BaseModel):
     user_id:str
     is_delete:bool
     workflow_id:str
-    #can_modify:bool
+    can_modify:bool
   
 
    

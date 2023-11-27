@@ -34,6 +34,23 @@ class Repository:
             documents.append(document)
         return documents
     
+    async def find_agregate(self,collection_name,match,lookup):
+        collection=self.db[collection_name]
+        res=collection.aggregate(
+        [
+        
+            lookup,
+        
+            match,
+        
+   
+    
+        ])
+        documents = []
+        async for document in res:
+            documents.append(document)
+        return documents
+    
     async def find_many_filter(self, collection_name, 
                         query,skip=0,limit=100) -> list:
         collection = self.db[collection_name]
