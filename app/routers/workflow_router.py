@@ -29,12 +29,13 @@ async def create_workflow(file: UploadFile = File(...), token: str = Depends(oau
 
         df = pd.read_excel(file.file)
         df.fillna('', inplace=True)
-
+        users=[]
         workflow_data = {
             "name": f"{file.filename}",  # название файла
             "create_at": datetime.utcnow(),
             "last_modify": datetime.utcnow(),
-            "user_id": credentials["id"]
+            "creater_id":credentials["id"],
+            "user_id": users.append(credentials["id"])
         }
         workflow_id = await repository.insert_one("workflows", workflow_data)
 
@@ -56,8 +57,14 @@ async def create_workflow(file: UploadFile = File(...), token: str = Depends(oau
 async def get_workflows(token: str = Depends(oauth2_scheme)):
     try:
         credentials = decode_token(token)
-        workflows = await repository.find_many("workflows", {"user_id": credentials["id"]})
-        return await get_serialize_document(workflows)
+        workflows = await repository.find_many("workflows",{"user_id": {"$in": [credentials["id"]]}})
+        workflows_list=await get_serialize_document(workflows)
+        for workflow in workflows_list:
+            if workflow["creater_id"]==credentials["id"]:
+                workflow["is_creator"]=True
+            else:
+                workflow["is_creator"]=False
+        return workflows_list
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
 

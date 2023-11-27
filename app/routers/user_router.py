@@ -21,7 +21,7 @@ async def create(request: UserDTO):
     profile = {
         "user_id": str(result),
         "first_name":request.username,
-        "last_name":"",
+        "last_name":request.username,
         "phone":"",
         "email":""
         }
