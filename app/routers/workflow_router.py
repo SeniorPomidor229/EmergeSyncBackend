@@ -30,12 +30,14 @@ async def create_workflow(file: UploadFile = File(...), token: str = Depends(oau
         df = pd.read_excel(file.file)
         df.fillna('', inplace=True)
         users=[]
+        _id=credentials["id"]
+        users.append(_id)
         workflow_data = {
             "name": f"{file.filename}",  # название файла
             "create_at": datetime.utcnow(),
             "last_modify": datetime.utcnow(),
-            "creater_id":credentials["id"],
-            "user_id": users.append(credentials["id"])
+            "creater_id":_id,
+            "user_id": users
         }
         workflow_id = await repository.insert_one("workflows", workflow_data)
 

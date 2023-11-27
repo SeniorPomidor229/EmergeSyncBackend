@@ -3,7 +3,7 @@ class Statuses(Enum):
     Hiding=0        # исключить из списка поле по ключу и значению
     Visible=1       # Сделать видимым только определенное поле по ключу и значению
     Unknown=2
-    AllHiding=3,# скрыть все по ключу
+    AllHiding=3# скрыть все по ключу
     AllVisible=4#сделать все видимым по ключу
 
 class KeyWorkflowItem(Enum):

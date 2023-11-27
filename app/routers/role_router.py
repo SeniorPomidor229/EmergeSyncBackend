@@ -39,7 +39,13 @@ async def create_role(request: Role, token: str = Depends(oauth2_scheme)):
     
     if(role):
        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role Exist")
-
+    ls=await get_serialize_document(workflow["user_id"])
+    
+    ls.append(request.user_id)
+    
+    workflow["user_id"]=ls
+    result = await repository.update_one("workflows",{ "_id":ObjectId(request.workflow_id)}, workflow)
+   
     for rule in request.rule:
          rule.id= str(ObjectId())
     insertItem={
@@ -50,6 +56,7 @@ async def create_role(request: Role, token: str = Depends(oauth2_scheme)):
         "workflow_id":request.workflow_id,
         "creater_id":_id
     }
+    
     result = await repository.insert_one("roles", insertItem)
     if(result):
         return JSONResponse(status_code=status.HTTP_201_CREATED,content= None) 
@@ -115,9 +122,24 @@ async def del_role(role_id: str,token: str = Depends(oauth2_scheme)):
     if(not _id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="User Not Found")
    
-    role_raw=await repository.find_one("roles",{"_id":ObjectId(role_id)})
+    role_raw=await get_serialize_document(await repository.find_one("roles",{"_id":ObjectId(role_id)}))
     if(not role_raw):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not found")
+   
+    
+    workflow={}
+    try:
+        workflow=await  repository.find_one("workflows",{ "_id":ObjectId(role_raw["workflow_id"])})
+    except:
+        result = await repository.delete_by_id("roles",ObjectId(role_id))
+        return await get_serialize_document(result)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Workflow underfind")
+    
+    ls=await get_serialize_document(workflow["user_id"])
+    if(role_raw["user_id"] in ls):
+        ls.remove(role_raw["user_id"])
+    workflow["user_id"]=ls
+    await repository.update_one("workflows",{ "_id":ObjectId(workflow["_id"])}, workflow)
     result = await repository.delete_by_id("roles",ObjectId(role_id))
     return await get_serialize_document(result)
 

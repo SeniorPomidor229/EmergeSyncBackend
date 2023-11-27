@@ -61,46 +61,66 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
     
     rules = [rule.fields for rule in role.rule if  rule.status == Statuses.Hiding.value and not rule.is_delete]
     only_visible_rules = [rule.fields for rule in role.rule if  rule.status == Statuses.Visible.value and not rule.is_delete]
+    only_all_Hiding_rules = [rule.fields for rule in role.rule if  rule.status == Statuses.AllHiding.value and not rule.is_delete]
+    only_all_Visible_rules = [rule.fields for rule in role.rule if  rule.status == Statuses.AllVisible.value and not rule.is_delete]
 
-    if  not rules and not only_visible_rules:
-        
-        items=(await get_serialize_document(workflow_items[offset_min:offset_max]))
+    if  not rules and not only_visible_rules and not only_all_Hiding_rules and not only_all_Visible_rules:
+        items=(await get_serialize_document(workflow_items))
         response_data = {
-             "skipCount": skip,
-            "maxResultCount": top,
+     
             "Items":items ,
-            "Count": len(workflow_items)
+            "Count": len(items)
         }
         return JSONResponse(content=response_data)
     
+
+
+    if only_all_Visible_rules :
+        for rule in only_all_Visible_rules:
+            for key, value in rule.items():
+                    try:
+                        for item in workflow_items:
+                            keys_to_remove = [item_key for item_key in item.keys() if item_key  not in rule]
+                            for key_del in keys_to_remove:
+                                item.pop(key_del, None)
+                    except Exception as ex:
+                        continue
     
-  
-    if only_visible_rules:
+    
+    if not only_all_Visible_rules and only_visible_rules :
         for item in workflow_items:
             for rule in only_visible_rules:
                 for key, value in rule.items():
                     try:
-                        if key in item and item[key] != value:
-                            item.pop(key, None)
 
-                        keys_to_remove = [item_key for item_key in item.keys() if item_key  not in rule]
+                        keys_to_remove = [item_key for item_key in item.keys() if item_key  not in rule and rule[item_key]!=value]
                         
                         for key_del in keys_to_remove:
                             item.pop(key_del, None)
                     except Exception as ex:
                         continue
 
-      
+   
+    if only_all_Hiding_rules:
+        for rule in only_all_Hiding_rules:
+                for key, value in rule.items():
+                    try:
+                        for item in workflow_items:
+                            if key in item:
+                                item.pop(key, None)
+                    except Exception as ex:
+                        continue
+    
+    if not only_all_Hiding_rules  and rules:
+        for item in workflow_items:
+            for rule in rules:
+                for key, value in rule.items():
+                    try:
+                        if key in item and item[key] == value:
+                            item.pop(key, None)
+                    except:                  
+                        continue
 
-    for item in workflow_items:   
-        for rule in rules:
-            for key, value in rule.items():
-                try:
-                    if key in item and item[key] == value:
-                        item.pop(key, None)
-                except:
-                   
-                    continue
     items=(await get_serialize_document(workflow_items))[offset_min:offset_max]
     response_data = {
             "skipCount": skip,

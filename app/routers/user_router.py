@@ -27,6 +27,8 @@ async def create(request: UserDTO):
         }
     await repository.insert_one("profiles", profile)
     return str(result)
+
+
 @router.post("/create/")
 async def create(request: UserDTO,first_name:str,last_name:str):
     user = await repository.find_one("users", {"username":request.username})
@@ -42,6 +44,8 @@ async def create(request: UserDTO,first_name:str,last_name:str):
         }
     await repository.insert_one("profiles", profile)
     return str(result)
+
+
 @router.post("/login")
 async def token(request: UserDTO):
     user = await repository.find_one("users", {"username":request.username})
@@ -59,6 +63,7 @@ async def me(token: str = Depends(oauth2_scheme)):
     print(creditals)
     profile = await repository.find_one("profiles", {"user_id":creditals["id"]})
     return await get_serialize_document(profile)
+
 @router.get("/{user_id}")
 async def me(user_id:str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
@@ -75,38 +80,50 @@ async def get_users(workflow_id:str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
   
     print(creditals)
-    profile = await repository.find_agregate(
-    collection_name="profiles",
-    lookup=
-    {
-        "$lookup": {
-            "from": "roles",
-            "localField": "user_id",
-            "foreignField": "user_id",
-            "as": "userRoles"
-        }
-    },
+#     profile = await repository.find_agregate(
+#     collection_name="profiles",
+#     lookup=
+#     {
+#         "$lookup": {
+#             "from": "roles",
+#             "localField": "user_id",
+#             "foreignField": "user_id",
+#             "as": "userRoles"
+#         }
+#     },
 
-    match={
-        "$match": 
-        {
+#     match={
+#         "$match": 
+#         {
              
-           "$and": [
-            {
-                "$or": [
-                    {"userRoles": {"$size": 0}},
-                    {"userRoles.is_delete": {"$exists": False}},
-                    {"userRoles.workflow_id":{"$ne": workflow_id} },
-                ]
-            },
-            {"user_id": {"$ne": creditals["id"]}}
-        ]
-        }
-    }
+#            "$and": [
+#             {
+#                 # "$or": [
+#                 #  #   {"userRoles": {"$size": 0}},
+                   
+#                 #    {"userRoles.workflow_id":{"$ne": workflow_id} },
+#                 #     # {"userRoles.is_delete": {"$exists": False}},
+#                 # ]
+#                 "$and":[
+#                     {"userRoles.user_id":{"$ne": workflow_id} },
+#                  #  {"userRoles.is_delete": {"$exists": False}},
+#                 ]
+#             },
+#             {"user_id": {"$ne": creditals["id"]}}
+#         ]
+#         }
+#     }
 
-)
+# )
 
-   
+    workflow=await repository.find_by_id("workflows",workflow_id)
+    if not workflow:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Workflow dont find")
+    profile = await repository.find_many("profiles", query={"$and": [
+    {"user_id": {"$nin": workflow["user_id"]}},
+    {"user_id": {"$ne": creditals["id"]}}
+    ]})
+
     #profile = await repository.find_many("profiles", )
     if not profile:
         profile=[]
