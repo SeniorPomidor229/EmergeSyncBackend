@@ -9,7 +9,7 @@ from typing import Dict
 class Rules(BaseModel):
     id:str
     status:int
-    fields: Dict[str, str] 
+    fields: Dict 
     is_delete:bool
 
 
