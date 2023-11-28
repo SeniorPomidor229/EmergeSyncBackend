@@ -73,7 +73,7 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
         }
         return JSONResponse(content=response_data)
     
-
+    
 
     if only_all_Visible_rules :
         for rule in only_all_Visible_rules:
@@ -87,7 +87,7 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
                         continue
     
     
-    if not only_all_Visible_rules and only_visible_rules :
+    if  only_visible_rules :
         for item in workflow_items:
             for rule in only_visible_rules:
                 for key, value in rule.items():
@@ -111,7 +111,7 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
                     except Exception as ex:
                         continue
     
-    if not only_all_Hiding_rules  and rules:
+    if  rules:
         for item in workflow_items:
             for rule in rules:
                 for key, value in rule.items():
