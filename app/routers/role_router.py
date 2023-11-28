@@ -69,8 +69,8 @@ async def create_role(request: Role=Body(), token: str = Depends(oauth2_scheme))
 
 
 @role_router.get("/my_role/{workflow_id}" , response_model=Role,
-                    summary="Get My Role"
-                    ,response_description="return authorizited user role by {workflow_id} ")
+                    summary="Get My Role by file with id {workflow_id}"
+                    ,response_description="return authorizited user role by file with id  {workflow_id} ")
 async def get_my_role( workflow_id:str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     _id=creditals["id"]
@@ -84,8 +84,8 @@ async def get_my_role( workflow_id:str,token: str = Depends(oauth2_scheme)):
 
 
 @role_router.get("/{workflow_id}/{user_id}/", response_model=Role,
-                    summary="Get User Role"
-                    ,response_description="return from {user_id} user role, by {workflow_id} ")
+                    summary="Get User Role by id user  {user_id} and by file with id {workflow_id}"
+                    ,response_description="return from user with {user_id}  role  and filter by {workflow_id} ")
 
 async def get_role(workflow_id:str,user_id:str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
@@ -158,8 +158,8 @@ async def del_role(role_id: str,token: str = Depends(oauth2_scheme)):
 
 
 @role_router.get("/{workflow_id}/",response_model=list[Role],
-                    summary="Get all roles"
-                    ,response_description="Get All Roles by workflow_id")
+                    summary="Get all roles by file with id {workflow_id}"
+                    ,response_description="Get All Roles by file with id {workflow_id}")
 async def get_roles(workflow_id:str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     _id=creditals["id"]

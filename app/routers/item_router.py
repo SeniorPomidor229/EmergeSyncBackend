@@ -13,7 +13,7 @@ repository = Repository("mongodb://admin:T3sT_s3rV@nik.ydns.eu:400/", "EmergeSyn
 
 
 @item_router.post("/{workflow_id}/",response_model=None,
-                    summary="Create field include in file"
+                    summary="Create field include in file by id  {workflow_id}"
                     ,response_description="Create field include in file"+
                      " with id {workflow_id}")
 async def create_workflow_item(workflow_id: str, item: dict, token: str = Depends(oauth2_scheme)):
@@ -33,7 +33,7 @@ async def create_workflow_item(workflow_id: str, item: dict, token: str = Depend
    
 
 @item_router.get("/{workflow_id}/" ,response_model=None,
-                    summary="Get fields in file"
+                    summary="Get fields in file by id {workflow_id}"
                     ,response_description="Get fields in file by  id {workflow_id} and filter by role")
 async def get_workflow_items(workflow_id: str,  request:Request, token: str = Depends(oauth2_scheme)):
     skip = int(request.query_params.get("$skip", 0))
@@ -233,7 +233,7 @@ async def get_workflows(workflow_id: str,
 
 
 @item_router.get("/getKeys/{workflow_id}/",response_model=None,
-                    summary="Get example first field from file"
+                    summary="Get example first field from file by id {workflow_id}"
                     ,response_description="Get example first field, from file with  id {workflow_id}")
 async def get_workflows(workflow_id: str, 
                  token: str = Depends(oauth2_scheme)):
@@ -251,8 +251,8 @@ async def get_workflows(workflow_id: str,
 
 
 @item_router.delete("/{workflow_id}/{item_id}",response_model=bool,
-                    summary="delete field from file"
-                    ,response_description="delete field {item_id} from file  with id {workflow_id}")
+                    summary="delete field from file with id {workflow_id}"
+                    ,response_description="delete field by id {item_id} from file  with id {workflow_id}")
 async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depends(oauth2_scheme)):
 
     credentials = decode_token(token)
@@ -281,7 +281,7 @@ async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depe
 
 
 @item_router.put("/{workflow_id}/",response_model=bool,
-                    summary="update field from file"
+                    summary="update field from file with id {workflow_id}"
                     ,response_description="update field {updated_item} from file with id {workflow_id}")
 async def update_workflow_item(workflow_id: str, updated_item: dict, token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)

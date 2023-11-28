@@ -75,7 +75,7 @@ async def get_user_profile(user_id:str,token: str = Depends(oauth2_scheme)):
     return await get_serialize_document(profile)
 
 @router.get("/users/{workflow_id}/",response_model=None,
-                    summary="Get all proffiles"
+                    summary="Get all proffiles by {workflow_id}"
                     ,response_description="Get all proffiles which don't haven't role"+
                      " in workflow with  {workflow_id}")
 async def get_users(workflow_id:str,token: str = Depends(oauth2_scheme)):
@@ -134,7 +134,9 @@ async def get_users(workflow_id:str,token: str = Depends(oauth2_scheme)):
     return await get_serialize_document(profile)
 
 
-@router.put("/")
+@router.put("/",response_model=bool,
+                    summary="Update  mine Profile"
+                    ,response_description="Update mine Profile")
 async def change(request: Profile, token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     change_document = {
@@ -144,7 +146,7 @@ async def change(request: Profile, token: str = Depends(oauth2_scheme)):
         "email": request.email
     }
     result = await repository.update_one("profiles", {"user_id":creditals["id"]}, change_document)
-    return await get_serialize_document(result)
+    return result>0
 
 
 

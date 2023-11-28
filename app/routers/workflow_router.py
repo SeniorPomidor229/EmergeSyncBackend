@@ -84,7 +84,7 @@ async def get_workflows(token: str = Depends(oauth2_scheme)):
 
 
 @workflow_router.delete("/{id}",response_model=bool,
-                    summary="delete file"
+                    summary="delete file by {id}"
                     ,response_description="delete file  by {id}")
 async def del_workflow(id: str, token: str = Depends(oauth2_scheme)):
     try:
