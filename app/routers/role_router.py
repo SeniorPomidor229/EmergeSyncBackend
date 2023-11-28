@@ -63,13 +63,13 @@ async def create_role(request: Role, token: str = Depends(oauth2_scheme)):
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role dont create")
 
 
-@role_router.get("/")
-async def get_my_role(token: str = Depends(oauth2_scheme)):
+@role_router.get("/{workflow_id}")
+async def get_my_role( workflow_id:str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     _id=creditals["id"]
     if(not _id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User not found")
-    role=   await repository.find_one("roles",{"user_id":_id ,    "is_delete":False})
+    role=   await repository.find_one("roles",{"user_id":_id , "workflow_id":  workflow_id ,"is_delete":False})
     
     if(not role):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not found")
