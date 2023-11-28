@@ -7,6 +7,7 @@ from utils.serialize import get_serialize_document,serialize_document_to_role
 from models.enums import Statuses
 from fastapi import Query
 from bson import ObjectId
+
 item_router = APIRouter()
 repository = Repository("mongodb://admin:T3sT_s3rV@nik.ydns.eu:400/", "EmergeSync")
 
@@ -132,7 +133,7 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
     return JSONResponse(content=response_data)
 
 
-@item_router.get("/without_pagination/{workflow_id}" )
+@item_router.get("/without_pagination/{workflow_id}",deprecated=True )
 async def get_workflows(workflow_id: str, 
                  token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
@@ -246,6 +247,17 @@ async def get_workflows(workflow_id: str,
 async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depends(oauth2_scheme)):
 
     credentials = decode_token(token)
+    role=await get_serialize_document(await repository.find_one("roles", {
+        "workflow_id":workflow_id,
+        "user_id":credentials["id"],
+        "is_delete":False
+        }))
+    
+    if role:
+      if "can_modify" in role and not role["can_modify"]:
+           raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user can`t modify")
+    
+    
     await repository.delete_one("workflow_items", {"_id": item_id, "workflow_id": workflow_id})
     log = {
         "workflow_id": workflow_id,
@@ -263,6 +275,19 @@ async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depe
 async def update_workflow_item(workflow_id: str, updated_item: dict, token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
     updated_item["_id"]=ObjectId(updated_item["_id"])
+    role=await get_serialize_document(await repository.find_one("roles", {
+        "workflow_id":workflow_id,
+        "user_id":credentials["id"],
+        "is_delete":False
+        }))
+    
+    if role:
+      if "can_modify" in role and not role["can_modify"]:
+           raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user can`t modify")
+    
+    
+
+    
     await repository.update_one("workflow_items", {"_id": updated_item["_id"]}, updated_item)
     log = {
         "workflow_id": workflow_id,
@@ -270,5 +295,5 @@ async def update_workflow_item(workflow_id: str, updated_item: dict, token: str 
         "op": "UPDATE",
         "change": updated_item["_id"]
     }
-    await repository.insert_one("workflow_log", log)
-    return {"message": "Workflow item updated successfully"}
+    wlg= await repository.insert_one("workflow_log", log)
+    return await get_serialize_document(wlg)

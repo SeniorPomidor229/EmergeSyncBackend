@@ -7,10 +7,10 @@ from typing import Dict
 # лучше все серилизовать и приветси базу к определенным полям 
 # и не ставить все надежды на фронт
 class Rules(BaseModel):
-    id:str
+    id:str=""
     status:int
-    fields: Dict 
-    is_delete:bool
+    fields: Dict
+    is_delete:bool=False
 
 
 

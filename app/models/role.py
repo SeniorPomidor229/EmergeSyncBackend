@@ -4,11 +4,11 @@ from typing import List
 
 class Role(BaseModel):
     name:str
-    rule:List[Rules]
+    rule:List[Rules]=[]
     user_id:str
-    is_delete:bool
+    is_delete:bool=False
     workflow_id:str
-    can_modify:bool
+    can_modify:bool=False
   
 
    

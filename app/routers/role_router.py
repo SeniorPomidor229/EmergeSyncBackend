@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends,status
+from fastapi import APIRouter, HTTPException, Depends,status,Body
 from fastapi.responses import JSONResponse
 from data.repository import Repository
 from models.user import *
@@ -9,15 +9,20 @@ from middleware.middleware import oauth2_scheme
 from bson import ObjectId
 from models.role import Role
 from models.rule import Rules
-role_router = APIRouter()
 
+role_router = APIRouter()
+rule_router=APIRouter()
 repository = Repository(
     "mongodb://admin:T3sT_s3rV@nik.ydns.eu:400/",
     "EmergeSync"
 )
- 
-@role_router.post("/")
-async def create_role(request: Role, token: str = Depends(oauth2_scheme)):
+
+@role_router.post("/",
+                  response_model=None,
+                    summary="Create a user role"
+                    ,response_description="upon successful creation, return status 201 with no content")
+async def create_role(request: Role=Body(), token: str = Depends(oauth2_scheme)):
+
     creditals = decode_token(token)
     _id=creditals["id"]
 
@@ -60,10 +65,12 @@ async def create_role(request: Role, token: str = Depends(oauth2_scheme)):
     result = await repository.insert_one("roles", insertItem)
     if(result):
         return JSONResponse(status_code=status.HTTP_201_CREATED,content= None) 
-    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role dont create")
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not created")
 
 
-@role_router.get("/my_role/{workflow_id}")
+@role_router.get("/my_role/{workflow_id}" , response_model=Role,
+                    summary="Get My Role"
+                    ,response_description="return authorizited user role by {workflow_id} ")
 async def get_my_role( workflow_id:str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     _id=creditals["id"]
@@ -76,7 +83,10 @@ async def get_my_role( workflow_id:str,token: str = Depends(oauth2_scheme)):
     return JSONResponse(content=await get_serialize_document(role)) 
 
 
-@role_router.get("/{workflow_id}/{user_id}/")
+@role_router.get("/{workflow_id}/{user_id}/", response_model=Role,
+                    summary="Get User Role"
+                    ,response_description="return from {user_id} user role, by {workflow_id} ")
+
 async def get_role(workflow_id:str,user_id:str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     _id=creditals["id"]
@@ -99,7 +109,9 @@ async def get_role(workflow_id:str,user_id:str,token: str = Depends(oauth2_schem
     return JSONResponse(content=response) 
 
 
-@role_router.put("/")
+@role_router.put("/", response_model=bool,
+                    summary="Update User Role"
+                    ,response_description="update role from request")
 async def change_role(request: Role, token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     _id= creditals["id"]
@@ -113,9 +125,11 @@ async def change_role(request: Role, token: str = Depends(oauth2_scheme)):
         if not rule.id:
             rule.id=str(ObjectId)
     result = await repository.update_one("roles", {"user_id":request.user_id,"workflow_id":request.workflow_id, "is_delete":False}, request.model_dump())
-    return await get_serialize_document(result)
+    return result>0
 
-@role_router.delete("/")
+@role_router.delete("/",response_model=bool,
+                    summary="Delete User Role"
+                    ,response_description="Delete role by role_id")
 async def del_role(role_id: str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     _id= creditals["id"]
@@ -132,8 +146,7 @@ async def del_role(role_id: str,token: str = Depends(oauth2_scheme)):
         workflow=await  repository.find_one("workflows",{ "_id":ObjectId(role_raw["workflow_id"])})
     except:
         result = await repository.delete_by_id("roles",ObjectId(role_id))
-        return await get_serialize_document(result)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Workflow underfind")
+        return result>0
     
     ls=await get_serialize_document(workflow["user_id"])
     if(role_raw["user_id"] in ls):
@@ -141,10 +154,12 @@ async def del_role(role_id: str,token: str = Depends(oauth2_scheme)):
     workflow["user_id"]=ls
     await repository.update_one("workflows",{ "_id":ObjectId(workflow["_id"])}, workflow)
     result = await repository.delete_by_id("roles",ObjectId(role_id))
-    return await get_serialize_document(result)
+    return result>0
 
 
-@role_router.get("/{workflow_id}/")
+@role_router.get("/{workflow_id}/",response_model=list[Role],
+                    summary="Get all roles"
+                    ,response_description="Get All Roles by workflow_id")
 async def get_roles(workflow_id:str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     _id=creditals["id"]
@@ -189,7 +204,9 @@ async def get_roles(workflow_id:str,token: str = Depends(oauth2_scheme)):
 
 
 
-@role_router.post("/rules/")
+@rule_router.post("/rules/",tags=["Rules"],response_model=Rules,
+                    summary="Create Rule"
+                    ,response_description="Create Rule by workflow_id and user_id\nsuccefuly response is http status 204 no content")
 async def create_rule(request: Rules,workflow_id:str, user_id:str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     _id=creditals["id"]
@@ -211,7 +228,9 @@ async def create_rule(request: Rules,workflow_id:str, user_id:str,token: str = D
 
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Can't Modify")
 
-@role_router.delete("/rules/")
+@rule_router.delete("/rules/",tags=["Rules"],response_model=bool,
+                    summary="Delete From User Role Rule"
+                    ,response_description="Delete Rule by role_id and user_id")
 async def del_rule( request: Rules, user_id:str,workflow_id:str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     _id= creditals["id"]
@@ -233,7 +252,7 @@ async def del_rule( request: Rules, user_id:str,workflow_id:str,token: str = Dep
     if not update_doc :
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not found")
     result = await repository.update_one("roles", {"user_id":user_id, "workflow_id":workflow_id,"is_delete":False}, update=update_doc.model_dump())
-    return await get_serialize_document(result)
+    return result>0
 
 
 

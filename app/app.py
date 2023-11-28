@@ -9,6 +9,7 @@ app.include_router(workflow_router.workflow_router, prefix="/workflow", tags=["W
 app.include_router(item_router.item_router, prefix="/workflow_item", tags=["WorkflowItem"])
 app.include_router(log_router.log_router, prefix="/workflow_log", tags=["WorkflowLog"])
 app.include_router(role_router.role_router, prefix="/role", tags=["Role"])
+app.include_router(role_router.rule_router, prefix="/role", tags=["Rules"])
 
 origins = ["*"]
 
