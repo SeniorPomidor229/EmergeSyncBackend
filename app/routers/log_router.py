@@ -9,7 +9,9 @@ repository = Repository(
     "mongodb://admin:T3sT_s3rV@nik.ydns.eu:400/", 
     "EmergeSync")
 
-@log_router.get("/")
+@log_router.get("/",response_model=list[dict[str,str]],
+                    summary="Get all logs"
+                    ,response_description="get all logs")
 async def get_log( token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
     result = await repository.find_agregate(
