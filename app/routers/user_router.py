@@ -12,7 +12,7 @@ repository = Repository(
     "EmergeSync"
 )
  
-@router.post("/",response_model=None,
+@router.post("/",  
                     summary="Create a user role"
                     ,response_description="upon successful creation, return id proffile")
 async def create(request: UserDTO):
@@ -37,7 +37,7 @@ async def create(request: UserDTO):
 
 
 
-@router.post("/login",response_model=None,
+@router.post("/login",  
                     summary="Login from user data"
                     ,response_description="upon successful login, return token")
 async def token(request: UserDTO):
@@ -53,7 +53,7 @@ async def token(request: UserDTO):
     token = encode_token(payload)
     return {"accsess_token": token}
 
-@router.get("/",response_model=Profile,
+@router.get("/",
                     summary="Get my proffile"
                     ,response_description="return mine proffile")
 async def me(token: str = Depends(oauth2_scheme)):
@@ -62,7 +62,7 @@ async def me(token: str = Depends(oauth2_scheme)):
     profile = await repository.find_one("profiles", {"user_id":creditals["id"]})
     return await get_serialize_document(profile)
 
-@router.get("/{user_id}",response_model=None,
+@router.get("/{user_id}",  
                     summary="Get proffile by {user_id}"
                     ,response_description="return proffile by {user_id}")
 async def get_user_profile(user_id:str,token: str = Depends(oauth2_scheme)):
@@ -74,7 +74,7 @@ async def get_user_profile(user_id:str,token: str = Depends(oauth2_scheme)):
 
     return await get_serialize_document(profile)
 
-@router.get("/users/{workflow_id}/",response_model=None,
+@router.get("/users/{workflow_id}/",  
                     summary="Get all proffiles by {workflow_id}"
                     ,response_description="Get all proffiles which don't haven't role"+
                      " in workflow with  {workflow_id}")
@@ -134,7 +134,7 @@ async def get_users(workflow_id:str,token: str = Depends(oauth2_scheme)):
     return await get_serialize_document(profile)
 
 
-@router.put("/",response_model=bool,
+@router.put("/", 
                     summary="Update  mine Profile"
                     ,response_description="Update mine Profile")
 async def change(request: Profile, token: str = Depends(oauth2_scheme)):

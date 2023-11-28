@@ -18,7 +18,7 @@ repository = Repository(
 )
 
 @role_router.post("/",
-                  response_model=None,
+                    
                     summary="Create a user role"
                     ,response_description="upon successful creation, return status 201 with no content")
 async def create_role(request: Role=Body(), token: str = Depends(oauth2_scheme)):
@@ -68,7 +68,7 @@ async def create_role(request: Role=Body(), token: str = Depends(oauth2_scheme))
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not created")
 
 
-@role_router.get("/my_role/{workflow_id}" , response_model=Role,
+@role_router.get("/my_role/{workflow_id}" ,
                     summary="Get My Role by file with id {workflow_id}"
                     ,response_description="return authorizited user role by file with id  {workflow_id} ")
 async def get_my_role( workflow_id:str,token: str = Depends(oauth2_scheme)):
@@ -83,7 +83,7 @@ async def get_my_role( workflow_id:str,token: str = Depends(oauth2_scheme)):
     return JSONResponse(content=await get_serialize_document(role)) 
 
 
-@role_router.get("/{workflow_id}/{user_id}/", response_model=Role,
+@role_router.get("/{workflow_id}/{user_id}/", 
                     summary="Get User Role by id user  {user_id} and by file with id {workflow_id}"
                     ,response_description="return from user with {user_id}  role  and filter by {workflow_id} ")
 
@@ -109,7 +109,7 @@ async def get_role(workflow_id:str,user_id:str,token: str = Depends(oauth2_schem
     return JSONResponse(content=response) 
 
 
-@role_router.put("/", response_model=bool,
+@role_router.put("/",  
                     summary="Update User Role"
                     ,response_description="update role from request")
 async def change_role(request: Role, token: str = Depends(oauth2_scheme)):
@@ -127,7 +127,7 @@ async def change_role(request: Role, token: str = Depends(oauth2_scheme)):
     result = await repository.update_one("roles", {"user_id":request.user_id,"workflow_id":request.workflow_id, "is_delete":False}, request.model_dump())
     return result>0
 
-@role_router.delete("/",response_model=bool,
+@role_router.delete("/", 
                     summary="Delete User Role"
                     ,response_description="Delete role by role_id")
 async def del_role(role_id: str,token: str = Depends(oauth2_scheme)):
@@ -157,7 +157,7 @@ async def del_role(role_id: str,token: str = Depends(oauth2_scheme)):
     return result>0
 
 
-@role_router.get("/{workflow_id}/",response_model=list[Role],
+@role_router.get("/{workflow_id}/",
                     summary="Get all roles by file with id {workflow_id}"
                     ,response_description="Get All Roles by file with id {workflow_id}")
 async def get_roles(workflow_id:str,token: str = Depends(oauth2_scheme)):
@@ -204,7 +204,7 @@ async def get_roles(workflow_id:str,token: str = Depends(oauth2_scheme)):
 
 
 
-@rule_router.post("/rules/",tags=["Rules"],response_model=Rules,
+@rule_router.post("/rules/",tags=["Rules"],
                     summary="Create Rule"
                     ,response_description="Create Rule by workflow_id and user_id\nsuccefuly response is http status 204 no content")
 async def create_rule(request: Rules,workflow_id:str, user_id:str,token: str = Depends(oauth2_scheme)):
@@ -228,7 +228,7 @@ async def create_rule(request: Rules,workflow_id:str, user_id:str,token: str = D
 
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Can't Modify")
 
-@rule_router.delete("/rules/",tags=["Rules"],response_model=bool,
+@rule_router.delete("/rules/",tags=["Rules"], 
                     summary="Delete From User Role Rule"
                     ,response_description="Delete Rule by role_id and user_id")
 async def del_rule( request: Rules, user_id:str,workflow_id:str,token: str = Depends(oauth2_scheme)):

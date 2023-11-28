@@ -21,9 +21,9 @@ class Workflow(BaseModel):
     last_modify: datetime
 
 
-@workflow_router.post("/",response_model=dict[str,str],
+@workflow_router.post("/",
                     summary="Create file"
-                    ,response_description="Create fil")
+                    ,response_description="Create file")
 async def create_workflow(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
     try:
         credentials = decode_token(token)
@@ -42,7 +42,7 @@ async def create_workflow(file: UploadFile = File(...), token: str = Depends(oau
             "user_id": users
         }
         workflow_id = await repository.insert_one("workflows", workflow_data)
-
+       
         workflow_items_list = [{str(key): value for key, value in item.items()}
                                for item in df.to_dict(orient="records")]
 
@@ -50,14 +50,14 @@ async def create_workflow(file: UploadFile = File(...), token: str = Depends(oau
             item["workflow_id"] = str(workflow_id)
 
         await repository.insert_many("workflow_items", workflow_items_list)
-        response_data = {"workflow_id": str(workflow_id)}
+        response_data = await get_serialize_document({"workflow_id": str(workflow_id)})
         return JSONResponse(content=response_data)
         # return {"message": "Workflow and workflow items created successfully"}
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))
 
 
-@workflow_router.get("/",response_model=list[dict[str,str]],
+@workflow_router.get("/",
                     summary="Get all mine files"
                     ,response_description="get all mine files")
 async def get_workflows(token: str = Depends(oauth2_scheme)):
@@ -83,7 +83,7 @@ async def get_workflows(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=422, detail=str(e))
 
 
-@workflow_router.delete("/{id}",response_model=bool,
+@workflow_router.delete("/{id}", 
                     summary="delete file by {id}"
                     ,response_description="delete file  by {id}")
 async def del_workflow(id: str, token: str = Depends(oauth2_scheme)):
