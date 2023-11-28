@@ -21,7 +21,9 @@ class Workflow(BaseModel):
     last_modify: datetime
 
 
-@workflow_router.post("/")
+@workflow_router.post("/",response_model=dict[str,str],
+                    summary="Create file"
+                    ,response_description="Create fil")
 async def create_workflow(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
     try:
         credentials = decode_token(token)
@@ -55,7 +57,9 @@ async def create_workflow(file: UploadFile = File(...), token: str = Depends(oau
         raise HTTPException(status_code=422, detail=str(e))
 
 
-@workflow_router.get("/")
+@workflow_router.get("/",response_model=list[dict[str,str]],
+                    summary="Get all mine files"
+                    ,response_description="get all mine files")
 async def get_workflows(token: str = Depends(oauth2_scheme)):
     try:
         credentials = decode_token(token)
@@ -79,12 +83,14 @@ async def get_workflows(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=422, detail=str(e))
 
 
-@workflow_router.delete("/{id}")
+@workflow_router.delete("/{id}",response_model=bool,
+                    summary="delete file"
+                    ,response_description="delete file  by {id}")
 async def del_workflow(id: str, token: str = Depends(oauth2_scheme)):
     try:
         credentials = decode_token(token)
-        await repository.delete_one("workflows", {"_id": ObjectId(id)})
+        delete= await repository.delete_one("workflows", {"_id": ObjectId(id)})
         await repository.delete_many("workflow_items", {"workflow_id": id})
-        return {"message": "Workflow and item deleted successfully"}
+        return delete>0
     except Exception as e:
         raise HTTPException(status_code=422, detail=str(e))

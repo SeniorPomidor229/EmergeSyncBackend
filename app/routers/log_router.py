@@ -10,8 +10,8 @@ repository = Repository(
     "EmergeSync")
 
 @log_router.get("/",response_model=list[dict[str,str]],
-                    summary="Get all logs"
-                    ,response_description="get all logs")
+                    summary="Get all mine logs"
+                    ,response_description="get all mine logs")
 async def get_log( token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
     result = await repository.find_agregate(
