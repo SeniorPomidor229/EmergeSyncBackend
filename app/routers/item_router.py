@@ -12,7 +12,10 @@ item_router = APIRouter()
 repository = Repository("mongodb://admin:T3sT_s3rV@nik.ydns.eu:400/", "EmergeSync")
 
 
-@item_router.post("/{workflow_id}/")
+@item_router.post("/{workflow_id}/",response_model=None,
+                    summary="Create field include in file"
+                    ,response_description="Create field include in file"+
+                     " with id {workflow_id}")
 async def create_workflow_item(workflow_id: str, item: dict, token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
 
@@ -29,7 +32,9 @@ async def create_workflow_item(workflow_id: str, item: dict, token: str = Depend
     return JSONResponse(content=response_data)
    
 
-@item_router.get("/{workflow_id}/" )
+@item_router.get("/{workflow_id}/" ,response_model=None,
+                    summary="Get fields in file"
+                    ,response_description="Get fields in file by  id {workflow_id} and filter by role")
 async def get_workflow_items(workflow_id: str,  request:Request, token: str = Depends(oauth2_scheme)):
     skip = int(request.query_params.get("$skip", 0))
     top = int(request.query_params.get("$top", 0))
@@ -227,7 +232,9 @@ async def get_workflows(workflow_id: str,
 
 
 
-@item_router.get("/getKeys/{workflow_id}/")
+@item_router.get("/getKeys/{workflow_id}/",response_model=None,
+                    summary="Get example first field from file"
+                    ,response_description="Get example first field, from file with  id {workflow_id}")
 async def get_workflows(workflow_id: str, 
                  token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
@@ -243,7 +250,9 @@ async def get_workflows(workflow_id: str,
 
 
 
-@item_router.delete("/{workflow_id}/{item_id}")
+@item_router.delete("/{workflow_id}/{item_id}",response_model=bool,
+                    summary="delete field from file"
+                    ,response_description="delete field {item_id} from file  with id {workflow_id}")
 async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depends(oauth2_scheme)):
 
     credentials = decode_token(token)
@@ -258,7 +267,7 @@ async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depe
            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user can`t modify")
     
     
-    await repository.delete_one("workflow_items", {"_id": item_id, "workflow_id": workflow_id})
+    delete =await repository.delete_one("workflow_items", {"_id": item_id, "workflow_id": workflow_id})
     log = {
         "workflow_id": workflow_id,
         "user_id": credentials["id"],
@@ -266,12 +275,14 @@ async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depe
         "change": item_id
     }
     await repository.insert_one("workflow_log", log)
-    return {"message": "Workflow and item delete successfully"}
+    return delete>0
 
 
 
 
-@item_router.put("/{workflow_id}/")
+@item_router.put("/{workflow_id}/",response_model=bool,
+                    summary="update field from file"
+                    ,response_description="update field {updated_item} from file with id {workflow_id}")
 async def update_workflow_item(workflow_id: str, updated_item: dict, token: str = Depends(oauth2_scheme)):
     credentials = decode_token(token)
     updated_item["_id"]=ObjectId(updated_item["_id"])
@@ -288,12 +299,12 @@ async def update_workflow_item(workflow_id: str, updated_item: dict, token: str 
     
 
     
-    await repository.update_one("workflow_items", {"_id": updated_item["_id"]}, updated_item)
+    update= await repository.update_one("workflow_items", {"_id": updated_item["_id"]}, updated_item)
     log = {
         "workflow_id": workflow_id,
         "user_id": credentials["id"],
         "op": "UPDATE",
         "change": updated_item["_id"]
     }
-    wlg= await repository.insert_one("workflow_log", log)
-    return await get_serialize_document(wlg)
+    await repository.insert_one("workflow_log", log)
+    return update>0
