@@ -63,7 +63,7 @@ async def create_role(request: Role, token: str = Depends(oauth2_scheme)):
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role dont create")
 
 
-@role_router.get("/{workflow_id}")
+@role_router.get("/my_role/{workflow_id}")
 async def get_my_role( workflow_id:str,token: str = Depends(oauth2_scheme)):
     creditals = decode_token(token)
     _id=creditals["id"]
