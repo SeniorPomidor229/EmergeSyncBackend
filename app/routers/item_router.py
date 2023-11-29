@@ -80,33 +80,40 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
         return JSONResponse(content=response_data)
     
     
-
+    
     if only_all_Visible_rules :
+      
+        keys=[]
         for rule in only_all_Visible_rules:
-            for key, value in rule.items():
-                    try:
-                        for item in workflow_items:
-                            keys_to_remove = [item_key for item_key in item.keys() if item_key  not in rule]
-                            for key_del in keys_to_remove:
-                                item.pop(key_del, None)
-                    except Exception as ex:
-                        continue
-    
-    
-    if  only_visible_rules :
+            for key in rule.keys():
+                keys.append(key)
+        
         for item in workflow_items:
-            for rule in only_visible_rules:
-                for key, value in rule.items():
-                    try:
-
-                        keys_to_remove = [item_key for item_key in item.keys() if item_key  not in rule and rule[item_key]!=value]
+            keys_to_remove = [item_key for item_key in item.keys() if item_key  not in keys]
+            for key_del in keys_to_remove:
+                item.pop(key_del, None)
+                            
+        
                         
-                        for key_del in keys_to_remove:
-                            item.pop(key_del, None)
-                    except Exception as ex:
-                        continue
-
-   
+                    
+    if only_visible_rules :
+        
+        keys=[]
+        values=[]
+        for rule in only_visible_rules:
+            for key,value in rule.items():
+                keys.append(key)
+                values.append(value)
+        
+        for item in workflow_items:
+            keys_to_remove=[]
+            for item_key,item_value in item.items():
+                if item_key not in keys or (item_key in keys and item_value != values[keys.index(item_key)]):
+                    keys_to_remove.append(item_key)
+                
+            for key_del in keys_to_remove:
+                item.pop(key_del, None)
+    
     if only_all_Hiding_rules:
         for rule in only_all_Hiding_rules:
                 for key, value in rule.items():
