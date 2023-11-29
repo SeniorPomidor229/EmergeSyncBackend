@@ -55,8 +55,9 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
     role = serialize_document_to_role(role_raw)
  
     if not role:
-        
+        workflow_items=[item for item in workflow_items if item] 
         items=(await get_serialize_document(workflow_items[offset_min:offset_max]))
+   
         response_data = {
             "skipCount": skip,
             "maxResultCount": top,
@@ -71,7 +72,9 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
     only_all_Visible_rules = [rule.fields for rule in role.rule if  rule.status == Statuses.AllVisible.value and not rule.is_delete]
 
     if  not rules and not only_visible_rules and not only_all_Hiding_rules and not only_all_Visible_rules:
+        workflow_items=[item for item in workflow_items if item] 
         items=(await get_serialize_document(workflow_items))
+     
         response_data = {
      
             "Items":items ,
@@ -89,7 +92,7 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
                 keys.append(key)
         
         for item in workflow_items:
-            keys_to_remove = [item_key for item_key in item.keys() if item_key  not in keys]
+            keys_to_remove = [item_key for item_key in item.keys() if item_key  not in keys and item_key!="_id" and item_key!="workflow_id"]
             for key_del in keys_to_remove:
                 item.pop(key_del, None)
                             
@@ -108,7 +111,7 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
         for item in workflow_items:
             keys_to_remove=[]
             for item_key,item_value in item.items():
-                if item_key not in keys or (item_key in keys and item_value != values[keys.index(item_key)]):
+                if item_key not in keys or (item_key in keys and item_value != values[keys.index(item_key)] and item_key!="_id"and item_key!="workflow_id"):
                     keys_to_remove.append(item_key)
                 
             for key_del in keys_to_remove:
@@ -120,7 +123,8 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
                     try:
                         for item in workflow_items:
                             if key in item:
-                                item.pop(key, None)
+                                if (key!="_id"and key!="workflow_id"):
+                                     item.pop(key, None)
                     except Exception as ex:
                         continue
     
@@ -129,12 +133,16 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
             for rule in rules:
                 for key, value in rule.items():
                     try:
-                        if key in item and item[key] == value:
+                        if key in item and item[key] == value and key!="_id"and key!="workflow_id":
                             item.pop(key, None)
                     except:                  
                         continue
 
+
+    workflow_items=[item for item in workflow_items if item]                     
     items=(await get_serialize_document(workflow_items))[offset_min:offset_max]
+  
+            
     response_data = {
             "skipCount": skip,
             "maxResultCount": top,
@@ -291,27 +299,44 @@ async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depe
                     summary="update field from file with id {workflow_id}"
                     ,response_description="update field {updated_item} from file with id {workflow_id}")
 async def update_workflow_item(workflow_id: str, updated_item: dict, token: str = Depends(oauth2_scheme)):
-    credentials = decode_token(token)
-    updated_item["_id"]=ObjectId(updated_item["_id"])
-    role=await get_serialize_document(await repository.find_one("roles", {
-        "workflow_id":workflow_id,
-        "user_id":credentials["id"],
-        "is_delete":False
-        }))
-    
-    if role:
-      if "can_modify" in role and not role["can_modify"]:
-           raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user can`t modify")
-    
-    
+    try:
+        credentials = decode_token(token)
+        # res=updated_item
+        # updated_item["_id"]=None
+        updated_item["_id"]=ObjectId(updated_item["_id"])
+        # return await get_serialize_document(updated_item)
+        role=await get_serialize_document(await repository.find_one("roles", {
+            "workflow_id":workflow_id,
+            "user_id":credentials["id"],
+            "is_delete":False
+            }))
+        
+        if role:
+            if "can_modify" in role and not role["can_modify"]:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user can`t modify")
+            
+        
+        updated_item =remove_empty_keys(updated_item)
+        updated_item = {key: value for key, value in updated_item.items() if value not in ([], {}, "")}
 
-    
-    update= await repository.update_one("workflow_items", {"_id": updated_item["_id"]}, updated_item)
-    log = {
-        "workflow_id": workflow_id,
-        "user_id": credentials["id"],
-        "op": "UPDATE",
-        "change": updated_item["_id"]
-    }
-    await repository.insert_one("workflow_log", log)
-    return update>0
+        update= await repository.update_one("workflow_items", {"_id":updated_item["_id"]}, updated_item)
+        log = {
+            "workflow_id": workflow_id,
+            "user_id": credentials["id"],
+            "op": "UPDATE",
+            "change": updated_item["_id"]
+        }
+        await repository.insert_one("workflow_log", log)
+        return update>0
+    except Exception as ex:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ex))
+
+
+def remove_empty_keys(item):
+    if isinstance(item, dict):
+        return {key: remove_empty_keys(value) for key, value in item.items() if value not in (None, "", {}, [])}
+    elif isinstance(item, list):
+        return [remove_empty_keys(element) for element in item]
+    else:
+        return item
+

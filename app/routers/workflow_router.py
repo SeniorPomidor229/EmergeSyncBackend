@@ -31,7 +31,7 @@ async def create_workflow(file: UploadFile = File(...), token: str = Depends(oau
         print(file.file)
 
         df = pd.read_excel(file.file)
-        df.fillna('', inplace=True)
+        df = df.applymap(lambda x: str(x) if pd.notna(x) else '')
         users=[]
         _id=credentials["id"]
         users.append(_id)
