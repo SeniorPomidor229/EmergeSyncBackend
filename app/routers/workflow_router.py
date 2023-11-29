@@ -25,6 +25,7 @@ class Workflow(BaseModel):
                     summary="Create file"
                     ,response_description="Create file")
 async def create_workflow(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
+    workflow_id=""
     try:
         credentials = decode_token(token)
         print(file.file)
@@ -41,10 +42,10 @@ async def create_workflow(file: UploadFile = File(...), token: str = Depends(oau
             "creater_id":_id,
             "user_id": users
         }
-        workflow_id = await repository.insert_one("workflows", workflow_data)
        
         workflow_items_list = [{str(key): value for key, value in item.items()}
                                for item in df.to_dict(orient="records")]
+        workflow_id = await repository.insert_one("workflows", workflow_data)
 
         for item in workflow_items_list:
             item["workflow_id"] = str(workflow_id)
@@ -54,7 +55,10 @@ async def create_workflow(file: UploadFile = File(...), token: str = Depends(oau
         return JSONResponse(content=response_data)
         # return {"message": "Workflow and workflow items created successfully"}
     except Exception as e:
-        raise HTTPException(status_code=422, detail=str(e))
+        try:
+            await repository.delete_by_id("workflows", workflow_id)
+        finally:
+            raise HTTPException(status_code=422, detail=str(e))
 
 
 @workflow_router.get("/",
