@@ -37,7 +37,7 @@ async def create_workflow_item(workflow_id: str, item: dict, token: str = Depend
                     ,response_description="Get fields in file by  id {workflow_id} and filter by role")
 async def get_workflow_items(workflow_id: str,  request:Request, token: str = Depends(oauth2_scheme)):
     skip = int(request.query_params.get("$skip", 0))
-    top = int(request.query_params.get("$top", 0))
+    top = int(request.query_params.get("$top", 19))
 
     if(not top):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Top must be positive")
@@ -47,7 +47,7 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
     offset_min = skip
     offset_max = top+skip
     workflow_items = await repository.find_many("workflow_items", {"workflow_id": workflow_id}, projection={"test":0})
-
+    
     #projection = { "workflow_id": 0}
 
     
@@ -55,9 +55,14 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
     role = serialize_document_to_role(role_raw)
  
     if not role:
-        workflow_items=[item for item in workflow_items if item] 
+        workflow= await repository.find_by_id("workflows",workflow_id)
+
+        if _id not in workflow["user_id"]:
+            
+            workflow_items=[]
         items=(await get_serialize_document(workflow_items[offset_min:offset_max]))
-   
+        workflow_items=[item for item in workflow_items if item and all(item.get(key) !="" for key in item.keys())] 
+        
         response_data = {
             "skipCount": skip,
             "maxResultCount": top,
@@ -66,14 +71,20 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
         }
         return JSONResponse(content=response_data)
     
-    rules = [rule.fields for rule in role.rule if  rule.status == Statuses.Hiding.value and not rule.is_delete]
-    only_visible_rules = [rule.fields for rule in role.rule if  rule.status == Statuses.Visible.value and not rule.is_delete]
-    only_all_Hiding_rules = [rule.fields for rule in role.rule if  rule.status == Statuses.AllHiding.value and not rule.is_delete]
-    only_all_Visible_rules = [rule.fields for rule in role.rule if  rule.status == Statuses.AllVisible.value and not rule.is_delete]
+    rules = [rule.fields for rule in role.rule if rule.fields  and  rule.status == Statuses.Hiding.value and not rule.is_delete]
+    only_visible_rules = [rule.fields for rule in role.rule if rule.fields  and rule.status == Statuses.Visible.value and not rule.is_delete]
+    only_all_Hiding_rules = [rule.fields for rule in role.rule if rule.fields  and rule.status == Statuses.AllHiding.value and not rule.is_delete]
+    only_all_Visible_rules = [rule.fields for rule in role.rule if rule.fields  and rule.status == Statuses.AllVisible.value and not rule.is_delete]
+    only_line_hiding = [rule.fields for rule in role.rule if rule.fields  and  rule.status == Statuses.LineHiding.value and not rule.is_delete]
+    only_line_visible = [rule.fields for rule in role.rule if rule.fields  and rule.status == Statuses.LineVisible.value and not rule.is_delete]
 
-    if  not rules and not only_visible_rules and not only_all_Hiding_rules and not only_all_Visible_rules:
-        workflow_items=[item for item in workflow_items if item] 
-        items=(await get_serialize_document(workflow_items))
+    if ((not only_line_visible and not only_line_hiding
+       and not rules and not only_visible_rules
+     and not only_all_Hiding_rules and not only_all_Visible_rules) ):
+        
+        items=(await get_serialize_document(workflow_items))[offset_min:offset_max]
+        workflow_items=[item for item in workflow_items if item and all(item.get(key) !="" for key in item.keys())] 
+  
      
         response_data = {
      
@@ -86,19 +97,58 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
     
     if only_all_Visible_rules :
       
-        keys=[]
-        for rule in only_all_Visible_rules:
-            for key in rule.keys():
-                keys.append(key)
-        
-        for item in workflow_items:
-            keys_to_remove = [item_key for item_key in item.keys() if item_key  not in keys and item_key!="_id" and item_key!="workflow_id"]
-            for key_del in keys_to_remove:
-                item.pop(key_del, None)
+        try:
+            keys = set(key for rule in only_all_Visible_rules for key in rule.keys())
+            
+            for item in workflow_items:
+                keys_to_remove = [item_key for item_key in item.keys() if item_key not in keys and item_key not in ("_id", "workflow_id")]
+                for key_del in keys_to_remove:
+                    item.pop(key_del, None)
+
+        except Exception as ex:
+            print(f"Ошибка на 101 - {str(ex)}")
                             
+
+    if only_all_Hiding_rules:
+        try:
+            for item in workflow_items:
+                for rule in only_all_Hiding_rules:
+                    for key, value in rule.items():
+                        if key in item and key not in ("_id", "workflow_id"):
+                            item.pop(key, None)
+
+        except Exception as ex:
+            print(f"Ошибка на 112 - {str(ex)}")
+            
         
-                        
-                    
+    if only_line_hiding:
+       
+            remove_items = []
+
+            for item in workflow_items:
+                for rule in only_line_hiding:
+                    if any(rule.get(key) == item.get(key) for key in rule):
+                        remove_items.append(item)
+                        break
+
+            for item in remove_items:
+                workflow_items.remove(item)
+
+   
+    if only_line_visible:
+        remove_items=[]
+        for item in workflow_items:
+            for rule in only_line_visible:
+                if(all(rule.get(key)!=item.get(key) for key in rule)):
+                    remove_items.append(item)
+                    break
+        
+        for item in remove_items:
+            workflow_items.remove(item)
+            
+        
+
+
     if only_visible_rules :
         
         keys=[]
@@ -117,17 +167,7 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
             for key_del in keys_to_remove:
                 item.pop(key_del, None)
     
-    if only_all_Hiding_rules:
-        for rule in only_all_Hiding_rules:
-                for key, value in rule.items():
-                    try:
-                        for item in workflow_items:
-                            if key in item:
-                                if (key!="_id"and key!="workflow_id"):
-                                     item.pop(key, None)
-                    except Exception as ex:
-                        continue
-    
+
     if  rules:
         for item in workflow_items:
             for rule in rules:
@@ -139,10 +179,12 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
                         continue
 
 
-    workflow_items=[item for item in workflow_items if item]                     
+    workflow_items=[item for item in workflow_items if item and all(item.get(key) !="" for key in item.keys())]  
+
+                   
     items=(await get_serialize_document(workflow_items))[offset_min:offset_max]
   
-            
+       
     response_data = {
             "skipCount": skip,
             "maxResultCount": top,
@@ -151,6 +193,10 @@ async def get_workflow_items(workflow_id: str,  request:Request, token: str = De
         }                
  
     return JSONResponse(content=response_data)
+
+
+
+
 
 
 @item_router.get("/without_pagination/{workflow_id}",deprecated=True )
@@ -247,6 +293,12 @@ async def get_workflows(workflow_id: str,
 
 
 
+
+
+
+
+
+
 @item_router.get("/getKeys/{workflow_id}/",
                     summary="Get example first field from file by id {workflow_id}"
                     ,response_description="Get example first field, from file with  id {workflow_id}")
@@ -271,25 +323,31 @@ async def get_workflows(workflow_id: str,
 async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depends(oauth2_scheme)):
 
     credentials = decode_token(token)
+    _id=credentials["id"]
     role=await get_serialize_document(await repository.find_one("roles", {
         "workflow_id":workflow_id,
-        "user_id":credentials["id"],
+        "user_id":_id,
         "is_delete":False
         }))
     
     if role:
       if "can_modify" in role and not role["can_modify"]:
            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user can`t modify")
+    workflow= await repository.find_by_id("workflows",workflow_id)
+
+    if _id not in workflow["user_id"] or not workflow   :
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user don't have access")
+  
     
-    
-    delete =await repository.delete_one("workflow_items", {"_id": item_id, "workflow_id": workflow_id})
-    log = {
-        "workflow_id": workflow_id,
-        "user_id": credentials["id"],
-        "op": "DELETE",
-        "change": item_id
-    }
-    await repository.insert_one("workflow_log", log)
+    delete =await repository.delete_by_id("workflow_items", item_id)
+    if(delete>0):
+        log = {
+            "workflow_id": workflow_id,
+            "user_id": _id,
+            "op": "DELETE",
+            "change": item_id
+        }
+        await repository.insert_one("workflow_log", log)
     return delete>0
 
 
@@ -301,32 +359,50 @@ async def delete_workflow_item(workflow_id: str, item_id: str, token: str = Depe
 async def update_workflow_item(workflow_id: str, updated_item: dict, token: str = Depends(oauth2_scheme)):
     try:
         credentials = decode_token(token)
+        _id=credentials["id"]
         # res=updated_item
         # updated_item["_id"]=None
         updated_item["_id"]=ObjectId(updated_item["_id"])
         # return await get_serialize_document(updated_item)
         role=await get_serialize_document(await repository.find_one("roles", {
             "workflow_id":workflow_id,
-            "user_id":credentials["id"],
+            "user_id":_id,
             "is_delete":False
             }))
         
         if role:
             if "can_modify" in role and not role["can_modify"]:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user can`t modify")
-            
+        workflow= await repository.find_by_id("workflows",workflow_id)
+
+        if _id not in workflow["user_id"]:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user don't have access")
+  
         
         updated_item =remove_empty_keys(updated_item)
         updated_item = {key: value for key, value in updated_item.items() if value not in ([], {}, "")}
-
+        if (len(updated_item)==2):
+          
+            delete =await repository.delete_by_id("workflow_items", updated_item["_id"])
+            if delete>0:
+                log = {
+                    "workflow_id": workflow_id,
+                    "user_id": _id,
+                    "op": "DELETE",
+                    "change": updated_item["_id"]
+                }
+                await repository.insert_one("workflow_log", log)
+            return delete>0
+            
         update= await repository.update_one("workflow_items", {"_id":updated_item["_id"]}, updated_item)
-        log = {
-            "workflow_id": workflow_id,
-            "user_id": credentials["id"],
-            "op": "UPDATE",
-            "change": updated_item["_id"]
-        }
-        await repository.insert_one("workflow_log", log)
+        if update>0:
+            log = {
+                "workflow_id": workflow_id,
+                "user_id": credentials["id"],
+                "op": "UPDATE",
+                "change": updated_item["_id"]
+            }
+            await repository.insert_one("workflow_log", log)
         return update>0
     except Exception as ex:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ex))

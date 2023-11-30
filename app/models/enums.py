@@ -5,6 +5,8 @@ class Statuses(Enum):
     Unknown=2
     AllHiding=3# скрыть все по ключу
     AllVisible=4#сделать все видимым по ключу
+    LineHiding=5
+    LineVisible=6
 
 class KeyWorkflowItem(Enum):
     OrganizationName="Название организации"
